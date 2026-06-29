@@ -924,6 +924,35 @@ function getFollowup(question, industry, cat){
 <div class="shot-item">你跟我说说那个场景。我帮你分析——当时你哪句话说对了，为什么那句话会管用。然后我们把那句话变成一条视频。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('举个例子说得更具体点')">举个例子</button><button class="followup-btn" onclick="quickFollow('客户到底想要什么')">客户真正要什么</button><button class="followup-btn" onclick="quickFollow('怎么开始第一步')">怎么开始</button></div>`;
 }
 
+// ── 基础对话层 ──────────────────────
+function isChatter(text){
+  const chats = ['你好','在吗','在不在','谢谢','多谢','感谢','厉害','牛逼','好的','ok','OK','嗯','哦',
+    '你是谁','你叫什么','你是什么','介绍一下','干什么的','有什么用','怎么用','能干什么','你是真人吗',
+    '滚','傻逼','垃圾','没用','呵呵','废物','他妈','你妈','草','操','sb','SB','cnm',
+    '再见','拜拜','bye','晚安','早点睡','辛苦了','不错','很好','非常好','有用','有帮助'];
+  for(let c of chats){
+    if(text.includes(c)) return true;
+  }
+  return false;
+}
+
+function handleChatter(text){
+  const chats = ['你好','在吗','在不在'];
+  const thanks = ['谢谢','多谢','感谢','辛苦了'];
+  const praise = ['厉害','牛逼','不错','很好','非常好','有用','有帮助','好的','ok','OK','嗯','哦'];
+  const askWho = ['你是谁','你叫什么','你是什么','介绍一下','干什么的','有什么用','怎么用','能干什么','你是真人吗'];
+  const goodbye = ['再见','拜拜','bye','晚安','早点睡'];
+  const abuse = ['滚','傻逼','垃圾','没用','呵呵','废物','他妈','你妈','草','操','sb','SB','cnm'];
+
+  for(let c of chats){ if(text.includes(c)) return '你好！告诉我你是做什么行业的，我帮你想怎么拍视频。'; }
+  for(let c of thanks){ if(text.includes(c)) return '不客气。你还有什么想问的尽管说——做视频这块有什么卡住的，随时问我。'; }
+  for(let c of praise){ if(text.includes(c)) return '谢谢。有什么行业想让我帮你分析的，直接说。'; }
+  for(let c of askWho){ if(text.includes(c)) return '我是行业百问——你告诉我你做什么行业，我告诉你抖音怎么拍、拍什么、怎么变现。你做什么的？'; }
+  for(let c of goodbye){ if(text.includes(c)) return '好的。下次有什么拍摄问题随时来找我。'; }
+  for(let c of abuse){ if(text.includes(c)) return ''; } // 忽略骂人
+  return '你先告诉我你是做什么行业的，我帮你想怎么拍呀。比如：<b>"我是做烧烤的"</b>、<b>"我开了一家火锅店"</b>——你直接说就行。';
+}
+
 // ── 行业检测 ──────────────────────
 function looksLikeNewIndustry(text){
   // 全词匹配——不匹配单字，防止"怎么开始"被"开"吃掉
@@ -1130,6 +1159,9 @@ function send(){
 
     if(text === '@管理' || text === '@admin'){
       showAdminPanel();
+    } else if(isChatter(text)){
+      // 寒暄/感谢/问你是谁 → 走基础对话
+      addMsg('bot', handleChatter(text));
     } else if(convTurn === 0){
       // 第一轮对话——必须说行业
       if(looksLikeNewIndustry(text)){
