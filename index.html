@@ -1036,57 +1036,70 @@ async function send(){
   if(welcome) welcome.style.display = 'none';
   if(guideTags) guideTags.style.display = 'none';
 
-  chatHistory.push({role:'user', content:text});  // 记录对话历史
+  chatHistory.push({role:'user', content:text});
   addMsg('user', text);
-
-  const typing = document.getElementById('typing');
-  typing.classList.add('show');
-  typing.scrollIntoView({behavior:'smooth',block:'end'});
-
   document.getElementById('btnSend').disabled = true;
   document.getElementById('chatInput').disabled = true;
 
   let botHtml = '';
 
-  // 非LLM路径: 直接同步返回
-  if(text === '@管理' || text === '@admin'){
-    showAdminPanel(); typing.classList.remove('show'); return finishSend();
-  }
-  if(isChatter(text)){
-    botHtml = handleChatter(text);
-    typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
-  }
-  if(convTurn === 0){
-    if(!looksLikeNewIndustry(text)){
-      botHtml = '你先告诉我你是做什么行业的，我才能帮你想怎么拍呀。<br><br>比如：<b>"我是做烧烤的"</b>、<b>"我开了一家火锅店"</b>、<b>"我做美甲的"</b>……<br><br>你直接说就行。';
-      typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
+  try {
+    // Fast path 1: admin
+    if(text === '@管理' || text === '@admin'){
+      showAdminPanel();
+      return finish();
     }
-    const match = matchIndustry(text);
-    lastIndustry = match.key; convTurn = 1;
-    if(!sessionId){ sessionId = 'sess_' + Date.now().toString(36); localStorage.setItem('vg_session_id', sessionId); }
-    if(match.answ && !match.answ.includes('你这个行业我没做深度拆解')){
-      botHtml = match.answ + followupBtns();
-      typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
-    }
-  } else if(looksLikeNewIndustry(text)){
-    const match = matchIndustry(text);
-    lastIndustry = match.key; convTurn = 1;
-    if(match.answ && !match.answ.includes('你这个行业我没做深度拆解')){
-      botHtml = match.answ + followupBtns();
-      typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
-    }
-  }
 
-  // 本地搞不定→走LLM
-  const llmReply = await askLLM(text);
-  if(llmReply && llmReply.length > 10){
-    botHtml = llmReply.replace(/\n/g,'<br>') + followupBtns() + `<div style="margin-top:6px;font-size:10px;color:#555"><button class="followup-btn" onclick="sendFeedback('helpful')" style="font-size:10px">👍</button> <button class="followup-btn" onclick="sendFeedback('not_helpful')" style="font-size:10px">👎</button></div>`;
-  } else {
-    botHtml = '我暂时回答不了，你换个方式问试试。';
+    // Fast path 2: chatter
+    if(isChatter(text)){
+      botHtml = handleChatter(text);
+      addMsg('bot', botHtml);
+      return finish();
+    }
+
+    // Fast path 3: no industry yet + no industry keyword
+    if(convTurn === 0 && !looksLikeNewIndustry(text)){
+      botHtml = '你先告诉我你是做什么行业的<br><br>比如：<b>"我是做烧烤的"</b>、<b>"我开了一家火锅店"</b><br><br>你直接说就行。';
+      addMsg('bot', botHtml);
+      return finish();
+    }
+
+    // Fast path 4: industry matched locally
+    const match = matchIndustry(text);
+    const hasLocalDB = match.answ && !match.answ.includes('你这个行业我没做深度拆解');
+    if(looksLikeNewIndustry(text) && hasLocalDB){
+      lastIndustry = match.key; convTurn = 1;
+      if(!sessionId){ sessionId = 'sess_' + Date.now().toString(36); localStorage.setItem('vg_session_id', sessionId); }
+      botHtml = match.answ + followupBtns();
+      addMsg('bot', botHtml);
+      return finish();
+    }
+
+    // Slow path: LLM
+    document.getElementById('typing').classList.add('show');
+    if(looksLikeNewIndustry(text)){ lastIndustry = match.key; convTurn = 1; }
+    if(!sessionId){ sessionId = 'sess_' + Date.now().toString(36); localStorage.setItem('vg_session_id', sessionId); }
+    const llmReply = await askLLM(text);
+    document.getElementById('typing').classList.remove('show');
+    if(llmReply && llmReply.length > 10){
+      botHtml = llmReply.replace(/\n/g,'<br>') + followupBtns() + '<div style="margin-top:6px;font-size:10px;color:#555"><button class="followup-btn" onclick="sendFeedback(\'helpful\')" style="font-size:10px">👍</button> <button class="followup-btn" onclick="sendFeedback(\'not_helpful\')" style="font-size:10px">👎</button></div>';
+    } else {
+      botHtml = '我暂时回答不了，你换个方式问试试。';
+    }
+    addMsg('bot', botHtml);
+  } catch(e){
+    addMsg('bot', '出错了，刷新页面再试一次。');
   }
-  typing.classList.remove('show');
-  addMsg('bot', botHtml);
-  return finishSend();
+  finish();
+
+  function finish(){
+    document.getElementById('btnSend').disabled = false;
+    document.getElementById('chatInput').disabled = false;
+    document.getElementById('chatInput').value = '';
+    document.getElementById('chatInput').focus();
+    chatHistory.push({role:'assistant', content:botHtml.replace(/<[^>]+>/g,'').slice(0,300)});
+    if(chatHistory.length > 30) chatHistory = chatHistory.slice(-30);
+  }
 }
 
 async function resetChat(){
