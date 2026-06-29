@@ -684,6 +684,20 @@ function getFollowup(question, industry, cat){
 <div class="shot-item">你跟我说说那个场景。我帮你分析——当时你哪句话说对了，为什么那句话会管用。然后我们把那句话变成一条视频。以后每个来找你的人，看完那条视频就相当于你已经跟他聊过一次了。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('举个例子说得更具体点')">举个例子</button><button class="followup-btn" onclick="quickFollow('客户到底想要什么')">客户真正要什么</button><button class="followup-btn" onclick="quickFollow('怎么开始第一步')">怎么开始</button></div>`;
 }
 
+// ── 行业检测 ──────────────────────
+function looksLikeNewIndustry(text){
+  const patterns = ['做','开','搞','干','我是','我是做','我是开','我是搞','我是干',
+    '烧烤','美发','卖酒','房产','纹身','茶叶','二手','摄影','宠物','清吧','摆摊',
+    '培训','舞蹈','汽修','家电','蛋糕','花店','民宿','钓鱼','洗车','家政','美甲','健身',
+    '理发','剪发','发型','白酒','红酒','中介','卖房','租房','修车','保养','火锅','奶茶','酒吧',
+    '刺青','保洁','月嫂','婚礼','摄像','拍照','瑜伽','小吃','补习','托管','家教',
+    '鲜花','绿植','盆栽','烘焙','甜品','面包','客栈','日租','咨询','法务','财税'];
+  for(let w of patterns){
+    if(text.includes(w)) return true;
+  }
+  return false;
+}
+
 // ── 匹配引擎 ──────────────────────
 function matchIndustry(input){
   const s = input.trim();
@@ -773,8 +787,8 @@ function send(){
   setTimeout(() => {
     typing.classList.remove('show');
 
-    if(convTurn === 0){
-      // 第一轮：行业识别 → 行业策略
+    if(convTurn === 0 || looksLikeNewIndustry(text)){
+      // 第一轮（或用户重新说了行业）：行业识别 → 行业策略
       const match = matchIndustry(text);
       lastIndustry = match.key;
       convTurn = 1;
