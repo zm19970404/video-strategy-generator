@@ -1141,7 +1141,7 @@ async function askLLM(userText){
   if(!lastIndustry) return null;
   const msgs = chatHistory.concat([{role:'user',content:userText}]);
   try{
-    const resp = await fetch('/api/chat', {
+    const resp = await fetch('https://video-strategy-generator.vercel.app/api/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({messages: msgs, industry: lastIndustry})
     });
