@@ -122,13 +122,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
   <div class="reset-bar"><button class="reset-btn" onclick="resetChat()">重新开始</button></div>
 </div>
 
+<script src="cdks.js"></script>
 <script>
-// ── CDK 验证 ──────────────────────────
-const CDK_API = '/api/validate-cdk';
+// ── CDK 验证 (纯本地, 零网络请求) ──────────
 const CDK_STORAGE_KEY = 'vg_cdk_token';
 const CDK_INPUT_KEY = 'vg_cdk_input';
 
-// 页面加载时检查是否已激活
 (function checkAccess(){
   const stored = localStorage.getItem(CDK_STORAGE_KEY);
   const savedInput = localStorage.getItem(CDK_INPUT_KEY);
@@ -137,40 +136,24 @@ const CDK_INPUT_KEY = 'vg_cdk_input';
 })();
 
 async function validateCDK(){
-  const input = document.getElementById('cdkInput').value.trim();
+  const input = document.getElementById('cdkInput').value.trim().toUpperCase();
   const btn = document.getElementById('cdkBtn');
   const msg = document.getElementById('cdkMsg');
-
   msg.className = 'cdk-msg'; msg.style.display = 'none';
-
   if(!input){ showCDKMsg('请输入激活码','error'); return; }
 
   btn.disabled = true; btn.textContent = '验证中...';
 
-  try {
-    const resp = await fetch(CDK_API, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ cdk: input })
-    });
-    const data = await resp.json();
-    if(data.success){
-      localStorage.setItem(CDK_STORAGE_KEY, data.token);
-      if(!localStorage.getItem(CDK_INPUT_KEY)) localStorage.setItem(CDK_INPUT_KEY, input);
-      showCDKMsg(data.hint||'激活成功','success');
-      setTimeout(()=>{ document.getElementById('cdkOverlay').classList.add('hidden'); }, 800);
-    } else {
-      let errMsg = data.hint || '激活码无效';
-      if(data.reason==='already_used') errMsg = '该激活码已在其他设备上使用';
-      if(data.reason==='invalid_cdk') errMsg = '激活码错误，请检查后重试';
-      showCDKMsg(errMsg, 'error');
-      btn.disabled = false; btn.textContent = '激活使用';
-    }
-  } catch(e){
-    // 网络错误或API挂了 → 降级放行 (不阻塞用户)
-    console.warn('CDK验证服务不可用,降级放行:', e.message);
-    localStorage.setItem(CDK_STORAGE_KEY, 'degraded_' + Date.now());
-    showCDKMsg('验证服务暂时不可用，已放行','success');
-    setTimeout(()=>{ document.getElementById('cdkOverlay').classList.add('hidden'); }, 800);
+  // 纯本地验证 — 毫秒级响应
+  await new Promise(r => setTimeout(r, 300)); // 小延迟让人感觉在"验证"
+  if(VALID_CDKS.has(input)){
+    localStorage.setItem(CDK_STORAGE_KEY, 'cdk_' + Date.now());
+    if(!localStorage.getItem(CDK_INPUT_KEY)) localStorage.setItem(CDK_INPUT_KEY, input);
+    showCDKMsg('激活成功！','success');
+    setTimeout(()=>{ document.getElementById('cdkOverlay').classList.add('hidden'); }, 600);
+  } else {
+    showCDKMsg('激活码无效，请检查后重试','error');
+    btn.disabled = false; btn.textContent = '激活使用';
   }
 }
 
