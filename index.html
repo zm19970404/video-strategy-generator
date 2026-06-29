@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>短视频策略生成器 · 输入行业 给你拍法</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro","PingFang SC","Microsoft YaHei",sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
+.app{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+
+/* 头部 */
+.header{text-align:center;padding:16px 0}
+.header h1{font-size:26px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .sub{font-size:13px;color:#666;margin-top:4px}
+
+/* 输入区 */
+.input-wrap{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:16px;padding:20px;margin-bottom:16px}
+.input-wrap label{display:block;font-size:14px;color:#aaa;margin-bottom:10px}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1;padding:12px 16px;background:#111122;border:1.5px solid #2a2a3e;border-radius:12px;color:#e8e8e8;font-size:16px;outline:none;font-family:inherit;transition:.2s}
+.input-row input:focus{border-color:#60a5fa}
+.input-row button{padding:12px 20px;background:linear-gradient(135deg,#60a5fa,#a78bfa);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:.2s}
+.input-row button:hover{opacity:.9;transform:translateY(-1px)}
+.input-row button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* 热门行业快捷 */
+.quick-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.quick-tag{padding:6px 14px;background:#111122;border:1px solid #2a2a3e;border-radius:99px;font-size:12px;color:#888;cursor:pointer;transition:.2s;font-family:inherit}
+.quick-tag:hover{border-color:#60a5fa;color:#e0e0e0}
+
+/* 加载 */
+.loading{padding:40px;text-align:center;display:none}
+.loading.show{display:block}
+.loading .spinner{width:36px;height:36px;border:3px solid #2a2a3e;border-top-color:#60a5fa;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:#666;font-size:13px}
+
+/* 结果区 */
+.result{display:none}
+.result.show{display:block}
+
+/* 策略卡片 */
+.strategy-card{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:16px;padding:20px;margin-bottom:14px}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #1e1e38}
+.card-title .icon{font-size:22px}
+.card-body{font-size:14px;line-height:1.8;color:#bbb}
+
+/* 目标人群标签 */
+.persona-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.persona-tag{background:rgba(96,165,250,.12);color:#60a5fa;padding:6px 12px;border-radius:8px;font-size:12px}
+
+/* 钩子列表 */
+.hook-list{list-style:none;padding:0}
+.hook-list li{padding:10px 14px;background:#111122;border-radius:10px;margin-bottom:8px;font-size:13px;line-height:1.7;border:1px solid #1e1e3e}
+.hook-list li .hook-num{display:inline-block;background:#60a5fa;color:#fff;width:20px;height:20px;border-radius:50%;text-align:center;line-height:20px;font-size:11px;font-weight:700;margin-right:8px}
+
+/* 选题方向 */
+.topic-grid{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.topic-item{padding:12px;background:#111122;border:1px solid #1e1e3e;border-radius:10px;font-size:13px;line-height:1.7}
+.topic-item .topic-label{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;margin-bottom:6px;display:inline-block}
+.topic-label.contradiction{background:rgba(248,113,113,.15);color:#f87171}
+.topic-label.gap{background:rgba(52,211,153,.15);color:#34d399}
+.topic-label.whw{background:rgba(245,158,11,.15);color:#f59e0b}
+.topic-label.emotion{background:rgba(167,139,250,.15);color:#a78bfa}
+
+/* 拍摄建议 */
+.shoot-tip{padding:14px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:12px;margin:10px 0;font-size:13px;line-height:1.8}
+.shoot-tip .tip-title{font-weight:700;color:#60a5fa;margin-bottom:6px}
+
+/* 分析原理 */
+.analysis-note{margin-top:16px;padding:12px;background:#111122;border-radius:10px;font-size:11px;color:#666;line-height:1.7}
+.analysis-note span{color:#888}
+
+/* 错误 */
+.error-msg{padding:20px;text-align:center;color:#f87171;display:none}
+.error-msg.show{display:block}
+
+/* 页脚 */
+.footer{text-align:center;padding:24px;color:#555;font-size:12px;line-height:1.8}
+.footer a{color:#666}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🎬 短视频策略生成器</h1>
+    <div class="sub">输入你的行业，告诉你怎么拍能让人停下来</div>
+  </div>
+
+  <div class="input-wrap">
+    <label>📝 你做什么行业？</label>
+    <div class="input-row">
+      <input type="text" id="industryInput" placeholder="比如：家政、财税、火锅、装修、健身..."
+             onkeydown="if(event.key==='Enter')generate()">
+      <button id="btnGenerate" onclick="generate()">生成策略</button>
+    </div>
+    <div class="quick-tags" id="quickTags"></div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>正在用需求洞察方法论分析这个行业...</p>
+  </div>
+
+  <div class="result" id="result"></div>
+  <div class="error-msg" id="error"></div>
+
+  <div class="footer">
+    <p>基于需求洞察方法论自动分析</p>
+    <p style="margin-top:4px">扫描法 · 望远镜/显微镜 · 矛盾与需求 · WHW模型 · 三层验证</p>
+  </div>
+</div>
+
+<script>
+// ── 行业知识库 ──────────────────────
+const INDUSTRY_DB = {
+  // 家政
+  "家政":{category:"本地服务",audience:"25-45岁城市家庭,双职工没时间做家务",pain:"找阿姨不靠谱、来了干不好、价格不透明、换人成本高",peerDoing:"拍打扫前后对比、晒好评截图、喊'专业家政找我们'",peerMissing:"没人讲'怎么判断一个阿姨靠不靠谱'、没人拍阿姨的真实工作过程、没人拆穿行业乱收费套路",hooks:["找了三个阿姨都不满意,后来我发现问一个问题就够了","家政行业有一个秘密,90%的客户不知道——你花钱买的不是打扫,是这个人会不会在你家待得住","我叫了一个阿姨来打扫,她进门做的第一件事让我愣住了"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'要打扫干净的'vs实际要的是'一个能长期信任的人'——家政卖的不是清洁,是安全感"},{label:"行业矛盾",type:"contradiction",text:"客户怕被坑vs阿姨怕被挑剔vs平台两边抽成——三方矛盾里藏着这个行业最大的内容缺口"},{label:"缺口选题",type:"gap",text:"没人拍'阿姨视角的一天'——从阿姨的眼睛里看客户家,这个角度从没人做过"},{label:"情绪共鸣",type:"emotion",text:"找阿姨的焦虑——有人在家装了三个摄像头还是睡不着,背后是信任被透支"}],shoot:"不要拍干净的厨房,拍阿姨进门的那一下——她先看什么、先碰什么、先问什么。这三件事暴露了她的专业度。观众看的是'怎么判断人',不是看你家有多干净。",firstVideo:"《找了个阿姨,她进我家做的第一件事——我就知道这个人能留》——开头拍一个日常困扰(之前换了三个阿姨都跑了),中间讲你发现了一个判断标准(进门的第一个动作),结尾落一个通用的'看人方法'。不要念方法论,就讲一个故事。"},
+
+  // 财税
+  "财税":{category:"企业服务",audience:"中小企业老板、个体户、创业者,怕税务出事",pain:"税太高不知道怎么合规省、看不懂政策、怕被查、找了代账但不知道他干了啥",peerDoing:"念政策条文、晒客户好评、喊'专业财税服务'",peerMissing:"没人把政策翻译成人话、没人讲'老板自己怎么一眼看出账有问题'、没人拆穿代账行业的坑",hooks:["你的代账公司有没有在帮你省钱——三个问题问完你就知道了","税务局查账之前,他们不会告诉你看这三个地方","去年我帮一个客户省了17万——不是我厉害,是他之前的账全是错的"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'帮我省税'vs实际上'按时报税不出错就行'——大多数代账公司做的是第二件,第一件从没人做"},{label:"行业矛盾",type:"contradiction",text:"老板想省钱vs怕出事vs看不懂政策——三重焦虑里,谁能把政策讲成人话,谁就是老板手机里不会删的人"},{label:"缺口选题",type:"gap",text:"没人做'老板财税避坑100问'系列——每个视频一个问题,30秒讲透,老板看完自己能判断"},{label:"情绪共鸣",type:"emotion",text:"税务局发来一条消息,你心跳加速打开——发现是催报税。这种感觉每个老板都有"},{label:"行业矛盾",type:"contradiction",text:"金税四期来了,所有老板都在焦虑同一件事——但没人告诉你,合规的人根本不用怕"}],shoot:"不要拍电脑屏幕和报表。拍你坐在老板对面、他眉头皱着听你讲完之后突然松了的那一下。观众买的是'安心'的画面,不是数据。",firstVideo:"《你的代账公司对你到底有没有用——三个问题就知道了》——不用讲专业知识,就讲三个老板自己能问的问题。问完老板发现'操,他根本没在帮我省钱'→触发分享。"},
+
+  // 餐饮/火锅
+  "火锅":{category:"餐饮",audience:"想开火锅店的人、正在开但生意不好的老板、想找靠谱加盟的创业者",pain:"隔壁家排队自己没人、不知道怎么拍视频、花钱投了抖音没效果、菜品没差异化",peerDoing:"拍菜品特写、喊'好吃不贵'、发优惠券、找达人探店",peerMissing:"没人拍'这家火锅店为什么排队'的底层原因、没人拆'火锅店老板自己怎么判断生意行不行'" ,hooks:["一条街上三家火锅店,只有一家在排队——不是他味道好,是他做对了一件事","火锅店老板每天看三个数字,看完就知道这个月赚不赚钱","我去吃了一家新开的火锅店,点完菜我就知道它活不过半年"],topics:[{label:"扫描法",type:"gap",text:"一条街上什么多了什么少了——多了火锅店,少了什么?少了能让一家人同时吃的、少了能让不吃辣的人也坐得住的"},{label:"矛盾拆解",type:"contradiction",text:"吃火锅最大的矛盾——一个人想吃辣一个人不吃、一个人想涮肉一个人想喝汤。谁能解决'吃不到一块去',谁就赢了"},{label:"WHW拆穿",type:"whw",text:"顾客嘴上说'味道好'——但实际让他回来的不是味道,是他不用纠结'这次去哪吃'"},{label:"缺口选题",type:"gap",text:"没人拍'火锅店倒闭前的七个信号'——每一个都是老板们正在经历但不敢说的"}],shoot:"不要拍整齐的菜品。拍锅底沸腾的那一下——热气往上冒、筷子伸进去。观众隔着屏幕闻到味道的时候就赢了。",firstVideo:"《一条街三家火锅店,排队的只有一家——我坐下来吃了半小时,发现不是味道的问题》——以一个神秘顾客的视角,拆解这家店做对了什么其他人没做到的事。不点名、不拉踩,就讲观察。"},
+
+  // 装修
+  "装修":{category:"本地服务",audience:"正在装修/准备装修的业主,怕被坑",pain:"报价看不懂、怕偷工减料、设计师不走心、工期拖延、增项加价",peerDoing:"晒装修案例、喊'半包399/平'、教你怎么选瓷砖",peerMissing:"没人拆装修公司的报价套路、没人讲'你自己怎么一眼看出问题'、没人拍工地的真实过程",hooks:["装修公司给你的报价单,看这一个数字就知道有没有坑","工地我去看了一眼,发现了一件事——我自己都不好意思跟业主说","你家装修完三个月,甲醛还在超标——不是材料的问题"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'环保材料'vs实际用的是最低配版本——低价套餐的秘密全在报价单里"},{label:"矛盾拆解",type:"contradiction",text:"业主怕被坑vs装修公司怕赔钱——两头都在防,结果谁都不信任谁。第一个打破这个僵局的人就是业主手机里最值钱的人"},{label:"缺口选题",type:"gap",text:"没人做'装修监工自己看什么'——教业主自己去工地时看三个地方,看完就知道师傅用心不用心"},{label:"情绪共鸣",type:"emotion",text:"装修到第三个月,你已经不想去工地了——不是因为懒,是因为每次去都能发现新问题。这种心累,装过的人都懂"}],shoot:"不要拍完工的样板间。拍工地上一个正在干活的师傅——他手上的动作、他回头看你一眼的眼神。观众看的是'这个人靠不靠谱',不是看瓷砖什么颜色。",firstVideo:"《装修公司的报价单,我教你只看一个数字》——不拉踩,不点名。就讲一个藏得很深的数字,业主自己翻出报价单对一下就知道有没有被坑。"},
+
+  // 健身
+  "健身":{category:"健康运动",audience:"想减肥/塑形但坚持不下来的人,办了卡不去的,被健身教练推销烦了的",pain:"坚持不了、没看到效果、不知道怎么练、私教太贵、怕被教练缠着推销",peerDoing:"教动作、晒身材对比、喊'跟我练'",peerMissing:"没人讲'你为什么坚持不下来'的底层原因、没人拆穿'私教课一半的钱是在买心理安慰'",hooks:["办了三年健身卡,去了不到十次——不是我不自律,是我发现了一个问题","健身教练跟你说'再报20节课',你该不该报——听他说完这句话你就知道","一个人能不能瘦下来,跟动作没关系"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'我要瘦'vs实际上要的是'我想照镜子的时候不讨厌自己'——健身卖的不是动作,是自我认可"},{label:"矛盾拆解",type:"contradiction",text:"想瘦vs不想动——这个矛盾本质不是懒,是健身的过程没给即时反馈。体重一周才变一次,镜子一天看好几次——反馈间隔太长"},{label:"缺口选题",type:"gap",text:"没人做'健身房教练不会告诉你的事'——比如'你这节课70%的时间是在划水、20%在聊天'"},{label:"情绪共鸣",type:"emotion",text:"你去健身房的路上最需要意志力——不是进了门之后。对抗的是'今天休息一天吧'这句你自己说的话"}],shoot:"不要拍标准动作。拍一个人的表情——那种'我做完了一组、大口喘气、看了一眼镜子、眼神里有点得意'的瞬间。",firstVideo:"《办了卡不去,不是你懒——是健身房的设计本身就有问题》——从游戏设计角度拆为什么健身难坚持,跟自律无关。最后给一个'不用意志力也能坚持'的方法。"},
+
+  // 电商
+  "电商":{category:"线上零售",audience:"做淘宝/拼多多/抖音小店的卖家,选品困难的,投流亏了的",pain:"选品选不对、投流ROI越来越低、退货率高、价格战利润薄、不知道拍什么视频",peerDoing:"晒后台数据、教投流技巧、卖选品工具",peerMissing:"没人讲'你选的不是品是你根本不了解的需求'、没人把差评变成选品指南",hooks:["我做电商最头疼的不是投流——是选品。后来我发现了一个问题,我一直在问错问题","一条差评,让我把一个快死的链接救活了","你店铺后台有一个数据,99%的卖家从来不看——但它会告诉你下一个爆款在哪"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'我要选爆款'vs实际在'找别人已经卖爆的东西抄'——抄的人永远在追,找需求的人永远在被追"},{label:"扫描法",type:"gap",text:"看差评——不是看内容,是看'什么东西让他不满意'。不满意的背面就是还没人满足的需求"},{label:"矛盾拆解",type:"contradiction",text:"想卖贵vs怕没人买vs同行在降价——陷入价格战是因为你的品没有解决一个'不买不行'的问题"},{label:"缺口选题",type:"gap",text:"没人做'用差评选品'系列——每个差评都是一个需求缺口,你只需要学会怎么看"}],shoot:"不要拍后台数据截图,拍你翻差评的那个过程——你看到一条差评、停下来、念出来、然后分析'这条差评值多少钱'。观众盯着你的思路,不是盯着你的后台。",firstVideo:"《我选品从来不刷榜单——我只看差评》——把差评当成'用户自己在告诉你他缺什么'。举一个真实例子,从一条差评挖出一个品类。"},
+
+  // 教育/培训
+  "教育培训":{category:"教育服务",audience:"培训机构老板、独立老师、知识付费从业者,招生难的",pain:"招不到学生、家长只问不报、转化率低、同行打价格战、不知道拍什么内容",peerDoing:"晒学生成绩、喊'专业师资'、发免费试听课、拍上课场景",peerMissing:"没人讲'家长嘴上说再看看实际在想什么'、没人拆穿'免费试听课为什么转化不了'",hooks:["家长跟你说'再考虑考虑'——他说这句话的时候,脑子里想的是另一件事","你发了三个月免费试听课,来了几十个人没一个报名的——不是课不好","我见过一个老师,他不发广告不降价——但他每次开新班当天报满"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'想让孩子成绩提高'vs实际上'想让自己少操心'——卖给家长的不是教学效果,是'省心'"},{label:"矛盾拆解",type:"contradiction",text:"家长怕孩子跟不上vs怕花钱打水漂→你跟他说'结果担保',他要的不是退款承诺,是'万一没效果的后续方案'"},{label:"缺口选题",type:"gap",text:"没人做'教培行业内容获客的真实秘密'——不是讲教育理念,是讲'你这个学科家长最怕什么'"},{label:"情绪共鸣",type:"emotion",text:"家长跟你说'再考虑考虑'——你回了'好的'。这句话背后的意思是'你不够想要我这个学生'"},{label:"缺口选题",type:"gap",text:"没人做'不同科目怎么拍招生视频'——英语和数学需要的角度完全不一样"}],shoot:"不要拍上课的热闹场面。拍你下课之后跟一个家长聊天的样子——不是推销,就是告诉她'你家孩子今天做了一件事让我印象很深'。观众在买的是'这个老师真的在看我孩子'。",firstVideo:"《家长跟你说'再考虑考虑'——她说这句话的时候脑子里想的三件事》——把家长的顾虑翻出来摆在桌上,不用说服,让她自己看清楚。看完她可能就报名了。"},
+
+  // 房产中介
+  "房产中介":{category:"房地产",audience:"房产中介、经纪人,客户越来越挑、成交周期越来越长",pain:"客户只看不买、同行低佣金抢客、房主期望价太高卖不掉、不知道发什么内容",peerDoing:"发房源、喊'性价比高'、晒成交截图、拍带看过程",peerMissing:"没人讲'客户看房时不说但心里在想的三个问题'、没人拍'中介自己的买房避坑指南'" ,hooks:["带客户看了十几套房,他都不满意——后来我发现,他根本不是在看房子","一套挂了半年的房子,我换了三个字就卖掉了","我做了五年中介,直到去年才搞明白——客户要的不是房子"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'要三室两厅南北通透'vs实际上要的是'下班回来有个地方让我不想出门'——卖的不是房子,是'回家的感觉'"},{label:"矛盾拆解",type:"contradiction",text:"买房的人怕买贵vs卖房的人怕卖亏→中介卡在中间。能把这个矛盾讲清楚的人,两边都找你"},{label:"缺口选题",type:"gap",text:"没人做'中介自己买房会看什么'——用中介的视角告诉客户'我看房时先看这三个地方'"},{label:"情绪共鸣",type:"emotion",text:"带看了两个月最后客户找了别人签——你没说出口的那句话是'你觉得我这两个月是在陪你逛街吗'"}],shoot:"不要拍户型图和带看。拍你在房子里站着——不是在介绍,是自己在看窗外、看采光、看邻居门口。观众想知道的不是房子多大,是'你怎么判断这房子值不值'。",firstVideo:"《我带客户看房,从来不先介绍户型——我先带他看一样东西》——看完这个东西,客户自己就知道这房子该不该买。不用你推销。"},
+
+  // 美业
+  "美业":{category:"美容美发",audience:"美容院/美甲店/美发店老板,想拓客但不会拍视频的",pain:"客人越来越少、老客流失、新客只对比价格、不知道拍什么内容能吸引人进店",peerDoing:"晒作品前后对比、喊'新客优惠'、拍店内环境",peerMissing:"没人拍'进店之前你该问的三个问题'、没人拆'为什么你的作品很好但没客人'" ,hooks:["我用同一个发型师剪了一年,直到有一次他换了个动作,我才知道之前他一直在划水","美甲店老板跟我说了一句话——'来的都是图便宜的,做完就走了,下次不来了'","一家不怎么做活动不降价的美容院,工作日中午排队"],topics:[{label:"WHW拆穿",type:"whw",text:"嘴上说'我要变美'vs实际上要的是'我想让那个人多看我一眼'——美业卖的不是技术,是'被看到的渴望'"},{label:"矛盾拆解",type:"contradiction",text:"客人想变美vs怕做坏了vs怕被推销办卡——进店之前的焦虑比进店之后还大,但没人管'进店之前'这一步"},{label:"缺口选题",type:"gap",text:"没人做'美发师自己怎么选发型师'——行内人看一个发型师的三个细节"},{label:"缺口选题",type:"gap",text:"没人做'为什么你的作品很好但没客人'——不是技术问题,是你拍的东西客人看完不会'想立刻去'"},{label:"情绪共鸣",type:"emotion",text:"剪完头发不敢照镜子那三秒——怕不好看,又怕发型师看出来你不太满意"}],shoot:"不要拍成品。拍过程中的一个细节——发型师歪头看了3秒,又重新拿起剪刀。观众看的是'这个人的认真程度'。",firstVideo:"《一家不降价的美容院,为什么工作日中午排队》——拆一家真实案例:她们拍的内容从来不提价格,只做了一件事——让客户觉得'这人懂我'。"}
+};
+
+// ── 通用分析引擎 ────────────────────
+const HOT_TAGS = ["家政","财税","火锅","装修","健身","电商","教育培训","房产中介","美业",
+  "月嫂","律师","保险","二手车","宠物","花店","奶茶","婚纱摄影","心理咨询","瑜伽",
+  "少儿编程","月嫂","瓷砖","全屋定制","代驾","租车","婚庆","剧本杀","密室逃脱"];
+
+function initQuickTags(){
+  document.getElementById('quickTags').innerHTML = HOT_TAGS.map(t =>
+    `<button class="quick-tag" onclick="quickSelect('${t}')">${t}</button>`
+  ).join('');
+}
+
+function quickSelect(tag){
+  document.getElementById('industryInput').value = tag;
+  generate();
+}
+
+// ── 匹配引擎 ────────────────────────
+function findMatch(industry){
+  const input = industry.trim();
+  // Exact match
+  for(let [key, val] of Object.entries(INDUSTRY_DB)){
+    if(input.includes(key) || key.includes(input)) return {key, ...val};
+  }
+  // Fuzzy match by category keywords
+  const mapping = {
+    "餐饮":"火锅","饭店":"火锅","烧烤":"火锅","小吃":"火锅","外卖":"火锅","奶茶":"火锅",
+    "美容":"美业","美发":"美业","美甲":"美业","纹绣":"美业","皮肤":"美业",
+    "会计":"财税","代账":"财税","税务":"财税","注册公司":"财税",
+    "保洁":"家政","月嫂":"家政","育儿":"家政","保姆":"家政","钟点工":"家政",
+    "家教":"教育培训","补习":"教育培训","培训":"教育培训","辅导":"教育培训","画室":"教育培训",
+    "减肥":"健身","瑜伽":"健身","普拉提":"健身","私教":"健身",
+    "卖房":"房产中介","二手房":"房产中介","新房":"房产中介","租房":"房产中介",
+    "淘宝":"电商","拼多多":"电商","抖音小店":"电商","跨境电商":"电商","直播带货":"电商",
+    "装修":"装修","设计":"装修","建材":"装修","施工":"装修","瓷砖":"装修","地板":"装修","全屋定制":"装修",
+    "律师":"律师","法律":"律师","法务":"律师",
+    "宠物":"宠物","猫":"宠物","狗":"宠物","宠物店":"宠物",
+    "保险":"保险","车险":"保险","寿险":"保险",
+  };
+  for(let [kw, target] of Object.entries(mapping)){
+    if(input.includes(kw)) {
+      const found = INDUSTRY_DB[target];
+      if(found) return {key:target, ...found};
+    }
+  }
+  return null;
+}
+
+// ── 通用分析 ────────────────────────
+function universalAnalyze(industry){
+  return {
+    category:"通用",
+    audience:`从事"${industry}"相关业务的人群,正在找客户的`,
+    pain:`不知道怎么拍视频吸引客户、同行都在拍一样的东西、发了很多内容没效果`,
+    peerDoing:`发产品/服务介绍、发客户好评、发优惠活动、偶尔发日常`,
+    peerMissing:`没人讲"${industry}怎么做内容才能让人看完想找你"、没人拆穿同行的无效拍法`,
+    hooks:[
+      `为什么你的${industry}视频发了没人看——因为你一直在拍一样东西,而观众想看的是另一件`,
+      `花了三个月才发现,${industry}获客最好的视频不是讲专业——是讲一个事情`,
+      `${industry}真的赚钱吗——我先给你看一组数字`
+    ],
+    topics:[
+      {label:"矛盾发现",type:"contradiction",text:"客户需要什么vs你在拍什么——大部分人在拍自己觉得重要的东西,客户想看的是能解决他焦虑的东西"},
+      {label:"WHW分析",type:"whw",text:`客户嘴上说"看看"vs他实际在找"一个能信任的人"——你的视频有没有让他在第一眼就信你`},
+      {label:"缺口切入",type:"gap",text:`你的同行都在拍什么——所有人在拍的那件事,反过来就是你的机会`},
+      {label:"情绪切入",type:"emotion",text:`做${industry}最难受的那个瞬间——那个瞬间,是你的同行从来不会拍的`}
+    ],
+    shoot:`不要拍成品和结果,拍你干活过程中的一个细节——让观众看到"你是怎么做的"而不是"你做了什么"。`,
+    firstVideo:`《做了这么久${industry},直到最近我才发现一件事》——以你的真实经历开场,讲一个你踩过的坑或者一个发现,最后落到一个观点。这个观点就是你整个账号的定位。`
+  };
+}
+
+// ── 渲染 ────────────────────────────
+function generate(){
+  const input = document.getElementById('industryInput').value.trim();
+  if(!input) return;
+
+  const loading = document.getElementById('loading');
+  const result = document.getElementById('result');
+  const error = document.getElementById('error');
+
+  loading.classList.add('show'); result.classList.remove('show'); error.classList.remove('show');
+  document.getElementById('btnGenerate').disabled = true;
+
+  // Simulate analysis delay
+  setTimeout(() => {
+    loading.classList.remove('show');
+    document.getElementById('btnGenerate').disabled = false;
+
+    let data = findMatch(input);
+    if(!data){
+      data = universalAnalyze(input);
+      data.key = input;
+    }
+
+    renderResult(data);
+    result.classList.add('show');
+    result.scrollIntoView({behavior:'smooth',block:'start'});
+  }, 800);
+}
+
+function renderResult(data){
+  const topicsHtml = data.topics.map(t=>`
+    <div class="topic-item">
+      <span class="topic-label ${t.type}">${t.label}</span>
+      <div>${t.text}</div>
+    </div>
+  `).join('');
+
+  const hooksHtml = data.hooks.map((h,i)=>`
+    <li><span class="hook-num">${i+1}</span>${h}</li>
+  `).join('');
+
+  document.getElementById('result').innerHTML = `
+    <div class="strategy-card">
+      <div class="card-title"><span class="icon">🎯</span>目标人群</div>
+      <div class="card-body">${data.audience}</div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="card-title"><span class="icon">💢</span>他们在烦什么</div>
+      <div class="card-body">${data.pain}</div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="card-title"><span class="icon">🔍</span>同行都在拍什么(扫描法)</div>
+      <div class="card-body" style="margin-bottom:8px">👉 <b>都在做</b>：${data.peerDoing}</div>
+      <div class="card-body">🎯 <b>没人做的缺口</b>：${data.peerMissing}</div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="card-title"><span class="icon">🪝</span>开场钩子（3个方向）</div>
+      <ul class="hook-list">${hooksHtml}</ul>
+    </div>
+
+    <div class="strategy-card">
+      <div class="card-title"><span class="icon">📋</span>选题方向（需求洞察分析）</div>
+      <div class="topic-grid">${topicsHtml}</div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="card-title"><span class="icon">📹</span>怎么拍（拍摄建议）</div>
+      <div class="shoot-tip">
+        <div class="tip-title">🎥 拍摄角度</div>
+        <div>${data.shoot}</div>
+      </div>
+    </div>
+
+    <div class="strategy-card" style="border-color:rgba(96,165,250,.3);background:linear-gradient(135deg,rgba(96,165,250,.06),rgba(167,139,250,.06))">
+      <div class="card-title"><span class="icon">▶️</span>第一条视频怎么拍</div>
+      <div class="card-body" style="font-size:14px">${data.firstVideo}</div>
+    </div>
+
+    <div class="analysis-note">
+      📐 <span>分析框架：</span>扫描法(看同行多了什么少了什么) → 矛盾法(客户现状vs期望) → WHW模型(嘴上说的vs实际做的vs真正要的) → 三层验证<br>
+      🏷 <span>行业分类：</span>${data.category} · 分析时间：${new Date().toLocaleString('zh-CN')}
+    </div>
+  `;
+}
+
+initQuickTags();
+</script>
+</body>
+</html>
