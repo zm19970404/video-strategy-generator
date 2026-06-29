@@ -994,19 +994,25 @@ async function sendFeedback(rating){
   } catch(e){}
 }
 
-async function askLLM(userText){
+async function askLLM(userText, timeoutMs=25000){
   if(!lastIndustry || !sessionId) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try{
     const resp = await fetch('/ask/api/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({sid:sessionId, message:userText, industry:lastIndustry})
+      body: JSON.stringify({sid:sessionId, message:userText, industry:lastIndustry}),
+      signal: controller.signal
     });
+    clearTimeout(timer);
     if(!resp.ok) return null;
     const data = await resp.json();
-    // 同步轮次
     if(data.turn) convTurn = data.turn;
     return data.reply || null;
-  } catch(e){ return null; }
+  } catch(e){
+    clearTimeout(timer);
+    return null;
+  }
 }
 
 
