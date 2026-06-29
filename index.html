@@ -92,6 +92,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
            onkeydown="if(event.key==='Enter')validateCDK()">
     <button class="cdk-btn" id="cdkBtn" onclick="validateCDK()">激活使用</button>
     <div class="cdk-msg" id="cdkMsg"></div>
+    <button class="reset-btn" style="margin-top:14px" onclick="clearCDK()">🔄 重新输入（清除已保存的验证）</button>
   </div>
 </div>
 
@@ -177,6 +178,17 @@ function showCDKMsg(text, type){
   const msg = document.getElementById('cdkMsg');
   msg.textContent = text;
   msg.className = `cdk-msg show ${type}`;
+}
+
+function clearCDK(){
+  localStorage.removeItem(CDK_STORAGE_KEY);
+  localStorage.removeItem(CDK_INPUT_KEY);
+  document.getElementById('cdkInput').value = '';
+  document.getElementById('cdkMsg').className = 'cdk-msg';
+  document.getElementById('cdkMsg').textContent = '';
+  document.getElementById('cdkBtn').disabled = false;
+  document.getElementById('cdkBtn').textContent = '激活使用';
+  document.getElementById('cdkOverlay').classList.remove('hidden');
 }
 
 // ── 上下文记忆 ──────────────────────
