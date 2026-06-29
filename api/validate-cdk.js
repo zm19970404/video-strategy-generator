@@ -3,24 +3,17 @@
  *
  * POST /api/validate-cdk  { cdk: "XXXX-XXXX-XXXX" }
  *
- * 逻辑:
- *  1. 检查 CDK 是否在有效列表中
- *  2. 检查该 CDK 是否已被其他 IP 使用
- *  3. 同一个 IP 可以多次使用同一个 CDK (设备重装等场景)
- *  4. CDK 通过后返回 token, 前端存 localStorage
- *
- * 存储: Vercel KV
- *  Key:  cdk:<code> → { ip, createdAt, token }
- *  Key:  ip:<ip>    → { lastAccess, activations }
+ * 存储: Upstash Redis
+ *  Key:  cdk:<code> → JSON { ip, token, createdAt }
  */
 
-// ── 有效 CDK 列表 (从环境变量读取, 逗号分隔) ──────────────
+// ── 有效 CDK 列表 ──────────────────────────────────────
 function getValidCDKs() {
   const raw = process.env.CDK_LIST || '';
   return raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 }
 
-// ── 生成 token ──────────────────────────────────────────
+// ── 生成 token ────────────────────────────────────────
 function generateToken() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let result = '';
@@ -30,44 +23,56 @@ function generateToken() {
   return 'cdk_' + result;
 }
 
-// ── 获取客户端 IP ──────────────────────────────────────
+// ── 获取客户端 IP ────────────────────────────────────
 function getClientIP(request) {
-  // Vercel 会把真实 IP 放在 x-forwarded-for 或 x-real-ip
   const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
+  if (forwarded) return forwarded.split(',')[0].trim();
   const realIP = request.headers.get('x-real-ip');
   if (realIP) return realIP.trim();
   return 'unknown';
 }
 
-// ── KV 读取辅助 ────────────────────────────────────────
-async function kvGet(key) {
+// ── Redis 辅助 ────────────────────────────────────────
+let _redis = null;
+async function getRedis() {
+  if (_redis) return _redis;
   try {
-    const { kv } = await import('@vercel/kv');
-    return await kv.get(key);
+    const { Redis } = await import('@upstash/redis');
+    _redis = Redis.fromEnv();
+    return _redis;
   } catch (e) {
-    // KV 不可用时降级: 允许访问 (不阻塞用户)
-    console.error('KV read error:', e.message);
+    console.error('Redis init error:', e.message);
     return null;
   }
 }
 
-async function kvSet(key, value) {
+async function redisGet(key) {
   try {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(key, value);
+    const redis = await getRedis();
+    if (!redis) return null;
+    const raw = await redis.get(key);
+    if (!raw) return null;
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    console.error('Redis read error:', e.message);
+    return null;
+  }
+}
+
+async function redisSet(key, value) {
+  try {
+    const redis = await getRedis();
+    if (!redis) return false;
+    await redis.set(key, JSON.stringify(value));
     return true;
   } catch (e) {
-    console.error('KV write error:', e.message);
+    console.error('Redis write error:', e.message);
     return false;
   }
 }
 
-// ── 主逻辑 ─────────────────────────────────────────────
+// ── 主逻辑 ───────────────────────────────────────────
 export default async function handler(request) {
-  // CORS
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -87,9 +92,7 @@ export default async function handler(request) {
   }
 
   let body;
-  try {
-    body = await request.json();
-  } catch {
+  try { body = await request.json(); } catch {
     return new Response(JSON.stringify({ success: false, reason: 'invalid_json' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -106,13 +109,12 @@ export default async function handler(request) {
 
   const validList = getValidCDKs();
   if (validList.length === 0) {
-    return new Response(JSON.stringify({ success: false, reason: 'server_not_configured' }), {
+    return new Response(JSON.stringify({ success: false, reason: 'server_not_configured', hint: '服务端未配置激活码列表' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
-  // 检查 CDK 是否在有效列表中
   if (!validList.includes(cdk)) {
     return new Response(JSON.stringify({ success: false, reason: 'invalid_cdk', hint: '请检查激活码是否正确' }), {
       status: 403,
@@ -122,48 +124,31 @@ export default async function handler(request) {
 
   const clientIP = getClientIP(request);
 
-  // 检查该 CDK 是否已被使用
-  const existing = await kvGet(`cdk:${cdk}`);
+  const existing = await redisGet(`cdk:${cdk}`);
   if (existing) {
-    // 已被使用 — 检查是否为同一 IP
     if (existing.ip !== clientIP && existing.ip !== 'unknown' && clientIP !== 'unknown') {
       return new Response(JSON.stringify({
-        success: false,
-        reason: 'already_used',
-        hint: '该激活码已在其他设备上使用',
+        success: false, reason: 'already_used', hint: '该激活码已在其他设备上使用',
       }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
     }
-    // 同一 IP — 允许复用, 返回已有 token
     return new Response(JSON.stringify({
-      success: true,
-      token: existing.token,
-      reused: true,
-      hint: '欢迎回来',
+      success: true, token: existing.token, reused: true, hint: '欢迎回来',
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
-  // 首次使用 — 记录到 KV
   const token = generateToken();
-  const record = {
-    ip: clientIP,
-    token,
-    createdAt: new Date().toISOString(),
-  };
+  const record = { ip: clientIP, token, createdAt: new Date().toISOString() };
+  const saved = await redisSet(`cdk:${cdk}`, record);
 
-  const saved = await kvSet(`cdk:${cdk}`, record);
   if (!saved) {
-    // KV 挂了 — 降级允许访问
     return new Response(JSON.stringify({
-      success: true,
-      token,
-      degraded: true,
-      hint: '验证服务暂时降级，已放行',
+      success: true, token, degraded: true, hint: '验证服务暂时降级，已放行',
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -171,9 +156,7 @@ export default async function handler(request) {
   }
 
   return new Response(JSON.stringify({
-    success: true,
-    token,
-    hint: '激活成功',
+    success: true, token, hint: '激活成功',
   }), {
     status: 200,
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
