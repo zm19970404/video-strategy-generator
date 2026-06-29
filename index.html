@@ -726,7 +726,7 @@ const DB = {
 
 // ── 追问知识库(第二轮以后基于行业和关键词) ──
 function getFollowup(question, industry, cat){
-  const q = question.toLowerCase();
+  const q = question.replace(/\s/g,'');
   const icat = cat||'';
 
   // 刚开/新手/没经验
@@ -812,8 +812,8 @@ function getFollowup(question, industry, cat){
 <div class="shot-item">这条视频不追求播放量。它的作用是——以后有人刷到你其他的视频，点进你主页看到这条，就知道你是干什么的、为什么要看你。这叫"主页名片"。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('第二条拍什么')">接下来拍什么</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button></div>`;
   }
 
-  // 怕/没信心
-  if(q.includes('怕')||q.includes('担心')||q.includes('笑话')||q.includes('丢人')){
+  // 怕别人笑话/不敢发
+  if(q.includes('怕别人')||q.includes('怕丢人')||q.includes('怕被笑')||q.includes('不敢发')||q.includes('怕发出去')||(q.includes('怕')&&(q.includes('人看')||q.includes('没人')))||(q.includes('担心')&&q.includes('别人'))){
     return `说实话——你最怕的不是别人笑话。你最怕的是<b>自己发了一条之后没人看，证明了自己不行。</b>我这么跟你说吧——你同行的视频你刷过没有？你觉得他们拍得好吗？不好对吧。但他们发了。他们的客户就是从那些"不好"的视频里来的。\n\n<div class="shot-item">你在犹豫的每一分钟，你的同行都在用你看不上的视频抢你的客户。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('怎么克服第一次拍的尴尬')">克服尴尬</button><button class="followup-btn" onclick="quickFollow('怎么开始第一步')">现在就开始</button></div>`;
   }
 
@@ -855,12 +855,20 @@ function getFollowup(question, industry, cat){
 <div class="shot-item">你看，同样的逻辑放到你做${industry}上面——你的客户嘴上说的是什么？他实际要的是什么？这两个东西之间的差距，就是你可以一直拍下去的内容金矿。</div>`;
   }
 
-  // 通用兜底——需求洞察式深入追问
-  return `你说到这点，我想问你一个问题——你做${industry}这段时间，<b>有没有遇到过一种客户，你跟他聊完之后自己都觉得"我今天聊得特别好"？</b>他问了什么、你怎么说的、最后他怎么决定的？
+  // 通用兜底——按问题内容给不同方向
+  if(q.includes('怎么拍')||q.includes('拍什么')||q.includes('内容')) return `做${industry}的拍什么——你其实不用想太复杂。就一件事：<b>把你日常做的事变成别人想看的东西。</b>\n\n<div class="shot-item">你每天在店里做的最多的三件事是什么？写下来。这三件事就是你第一条、第二条、第三条视频。不用想创意——就拍你真实在做的。你跟我说说你一天大概做哪些事，我帮你挑最有画面感的那一个。</div>`;
+
+  if(q.includes('怎么引流')||q.includes('怎么获客')||q.includes('怎么找客户')||q.includes('怎么让别人')||q.includes('怎么让人来')) return `做${industry}的引流——<b>说白了就是在客户最可能搜到你的地方出现。</b>\n\n<div class="shot-item"><b>线上</b>：同城搜索靠关键词。每条视频带上城市名+${industry}。号多弄几个。</div>\n\n<div class="shot-item"><b>线下</b>：你服务过的每一个满意的客户，让他帮你发一条朋友圈/抖音。不是让你花钱请他发——是你服务完了之后他自己愿意发。这个叫"体验溢出"。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('同城搜索具体怎么做')">同城怎么推</button><button class="followup-btn" onclick="quickFollow('怎么让客户主动帮我宣传')">客户帮传</button></div>`;
+
+  if(q.includes('怎么定价')||q.includes('多少钱')||q.includes('报价')||q.includes('收费')) return `定价这个东西——<b>不是看同行定多少你就定多少。</b>\n\n<div class="shot-item">你去看你的同行在定什么价——然后你定比他高一点还是低一点，取决于你比他多做了哪一件事。你做${industry}的，有没有一个服务是你的同行都不愿意做、但你做了的？那个东西就是你定价比他们高的理由。</div>\n\n<div class="shot-item">你上一单收了多少钱、你觉得自己值不值这个价？你跟我说说——我帮你看你的定价空间在哪。</div>`;
+
+  if(q.includes('怎么招人')||q.includes('怎么找人')||q.includes('员工')||q.includes('团队')||q.includes('自己一个人')||q.includes('忙不过来')) return `招人的问题——说白了不是你找不到人，是<b>你不知道怎么让那个对的人看到你。</b>\n\n<div class="shot-item">你做${industry}的视频，其实就是在招人。你拍的越真实、越用心，看到你视频的人里一定会有想要跟着你干的人。你在视频里展示的认真程度，就是最好的招聘广告。</div>\n\n<div class="shot-item">你自己一个人干了多久了？最头疼的是哪一块没人帮你？</div>`;
+
+  return `你说到这点，我想问你一个问题——你做${industry}这段时间，<b>有没有遇到过一种客户，你跟他聊完之后自己都觉得"我今天聊得特别好"？</b>
 
 <div class="shot-item">你把这个场景回想一下。那个让你觉得"聊得好"的瞬间——其实就是你做内容最好的素材。因为那个瞬间，你说的话是真的打中了对方心里在想的东西。</div>
 
-<div class="shot-item">你跟我说说那个场景。我帮你分析——当时你哪句话说对了，为什么那句话会管用。然后我们把那句话变成一条视频。以后每个来找你的人，看完那条视频就相当于你已经跟他聊过一次了。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('举个例子说得更具体点')">举个例子</button><button class="followup-btn" onclick="quickFollow('客户到底想要什么')">客户真正要什么</button><button class="followup-btn" onclick="quickFollow('怎么开始第一步')">怎么开始</button></div>`;
+<div class="shot-item">你跟我说说那个场景。我帮你分析——当时你哪句话说对了，为什么那句话会管用。然后我们把那句话变成一条视频。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('举个例子说得更具体点')">举个例子</button><button class="followup-btn" onclick="quickFollow('客户到底想要什么')">客户真正要什么</button><button class="followup-btn" onclick="quickFollow('怎么开始第一步')">怎么开始</button></div>`;
 }
 
 // ── 行业检测 ──────────────────────
