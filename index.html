@@ -178,6 +178,7 @@ function clearCDK(){
 let lastIndustry = '';  // 记住当前在聊什么行业
 let convTurn = 0;       // 对话轮次
 let chatHistory = [];   // 对话历史 (用于LLM理解上下文)
+let sessionId = localStorage.getItem('vg_session_id') || '';  // 持久会话ID
 
 // ── 对话持久化 ──────────────────────
 const CHAT_STORAGE_KEY = 'vg_chat_history';
@@ -1136,17 +1137,54 @@ function addMsg(role, html){
   saveChat();  // 自动保存对话
 }
 
-// ── LLM 兜底（走Vercel后端→DeepSeek）─
+// ── 会话持久化(v2: 服务器端存储) ─
+async function ensureSession(){
+  if(sessionId){
+    // 恢复已有会话
+    try{
+      const resp = await fetch('/ask/api/session',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({sid:sessionId, load:true})
+      });
+      if(!resp.ok) return;
+      const data = await resp.json();
+      lastIndustry = data.industry || lastIndustry;
+      convTurn = data.turn || 0;
+      // 恢复对话历史到UI
+      if(data.history && data.history.length > 0){
+        const welcome = document.querySelector('.welcome-msg');
+        const guideTags = document.getElementById('guideTags');
+        if(welcome) welcome.style.display='none';
+        if(guideTags) guideTags.style.display='none';
+        data.history.forEach(m => {
+          chatHistory.push(m);
+          addMsgFromServer(m.role, m.content);
+        });
+      }
+    } catch(e){}
+  }
+}
+
+function addMsgFromServer(role, content){
+  const div = document.createElement('div');
+  div.className = 'msg-row ' + (role==='user'?'user':'bot');
+  div.innerHTML = `<div class="msg-bubble">${content.replace(/\n/g,'<br>')}</div>`;
+  document.getElementById('chatArea').appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+// ── LLM 兜底(走服务器后端) ─
 async function askLLM(userText){
-  if(!lastIndustry) return null;
-  const msgs = chatHistory.concat([{role:'user',content:userText}]);
+  if(!lastIndustry || !sessionId) return null;
   try{
-    const resp = await fetch('https://xuqiuxitong.top/ask/api/chat', {
+    const resp = await fetch('/ask/api/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({messages: msgs, industry: lastIndustry})
+      body: JSON.stringify({sid:sessionId, message:userText, industry:lastIndustry})
     });
     if(!resp.ok) return null;
     const data = await resp.json();
+    // 同步轮次
+    if(data.turn) convTurn = data.turn;
     return data.reply || null;
   } catch(e){ return null; }
 }
@@ -1181,7 +1219,6 @@ async function send(){
   let botHtml = '';
 
   setTimeout(async () => {
-    // 先出本地答案（不关typing）
     let needsLLM = false;
 
     if(text === '@管理' || text === '@admin'){
@@ -1189,32 +1226,33 @@ async function send(){
     } else if(isChatter(text)){
       botHtml = handleChatter(text);
     } else if(convTurn === 0){
+      // 第一轮——行业匹配(本地毫秒级)
       if(looksLikeNewIndustry(text)){
         const match = matchIndustry(text);
         lastIndustry = match.key; convTurn = 1;
+        if(!sessionId){ sessionId = 'sess_' + Date.now().toString(36); localStorage.setItem('vg_session_id', sessionId); }
         botHtml = match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
       } else {
         botHtml = `你先告诉我你是做什么行业的，我才能帮你想怎么拍呀。<br><br>比如：<b>"我是做烧烤的"</b>、<b>"我开了一家火锅店"</b>、<b>"我做美甲的"</b>……<br><br>你直接说就行。`;
       }
     } else if(looksLikeNewIndustry(text)){
+      // 切换行业(本地毫秒级)
       const match = matchIndustry(text);
       lastIndustry = match.key; convTurn = 1;
       botHtml = match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
     } else {
-      const match = matchIndustry(lastIndustry);
-      const cat = match.cat || '';
-      botHtml = getFollowup(text, lastIndustry, cat);
-      convTurn++;
-      if(isGenericResponse(botHtml)){
-        needsLLM = true;
-      }
+      // 第二轮以后 → 全部发给服务器(LLM智能回答+会话持久化)
+      needsLLM = true;
     }
 
-    // 本地引擎兜不住 → 交给LLM（保持typing状态）
     if(needsLLM){
       const llmReply = await askLLM(text);
       if(llmReply && llmReply.length > 10){
-        botHtml = llmReply + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('还能再详细一点吗')">再详细点</button><button class="followup-btn" onclick="quickFollow('有没有其他方法')">其他方法</button></div>`;
+        botHtml = llmReply.replace(/\n/g,'<br>') + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('还能再详细一点吗')">再详细点</button><button class="followup-btn" onclick="quickFollow('有没有其他方法')">其他方法</button></div>`;
+      } else {
+        // 服务器不可用→降级到本地引擎
+        const match = matchIndustry(lastIndustry);
+        botHtml = getFollowup(text, lastIndustry, match.cat || '');
       }
     }
 
@@ -1233,9 +1271,13 @@ async function send(){
   }, 500 + Math.random()*400);
 }
 
-function resetChat(){
-  lastIndustry = ''; convTurn = 0;
-  localStorage.removeItem(CHAT_STORAGE_KEY);  // 清除对话记录
+async function resetChat(){
+  lastIndustry = ''; convTurn = 0; chatHistory = [];
+  localStorage.removeItem(CHAT_STORAGE_KEY);  // 清除本地对话记录
+  // 清除服务器会话
+  if(sessionId){
+    try{ await fetch('/ask/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sid:sessionId,reset:true})}); } catch(e){}
+  }
   document.getElementById('chatArea').innerHTML = `
     <div class="welcome-msg">
       <div class="emoji">👋</div>
@@ -1251,7 +1293,16 @@ function resetChat(){
 }
 
 // ── 页面加载 ──────────────────────
-if(!restoreChat()){ initGuideTags(); }
+(async function init(){
+  if(sessionId){
+    await ensureSession();  // 从服务器恢复历史
+    if(chatHistory.length > 0){
+      // 已经恢复了对话, 不显示欢迎页
+      return;
+    }
+  }
+  if(!restoreChat()){ initGuideTags(); }
+})();
 setTimeout(checkUnmatchedAlert, 5000);  // 5秒后检查是否有新未覆盖行业
 </script>
 </body>
