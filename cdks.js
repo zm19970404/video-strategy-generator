@@ -1,6 +1,8 @@
 // 自动生成 — 1000个有效CDK
 const VALID_CDKS = new Set([
-  "228Q-QVCP-2H5Z",
+    "TEST-CDK-001",
+  "TEST-CDK-002",
+"228Q-QVCP-2H5Z",
   "228Z-734F-AC76",
   "22P7-XAUA-3NYN",
   "25D9-EMC5-K93E",
