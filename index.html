@@ -178,6 +178,41 @@ function clearCDK(){
 let lastIndustry = '';  // 记住当前在聊什么行业
 let convTurn = 0;       // 对话轮次
 
+// ── 对话持久化 ──────────────────────
+const CHAT_STORAGE_KEY = 'vg_chat_history';
+
+function saveChat(){
+  const chatArea = document.getElementById('chatArea');
+  // 只保存消息行，不保存欢迎页+引导标签
+  const msgRows = chatArea.querySelectorAll('.msg-row');
+  let saved = [];
+  msgRows.forEach(row => {
+    const bubble = row.querySelector('.msg-bubble');
+    if(bubble) saved.push({role: row.classList.contains('user')?'user':'bot', html: bubble.innerHTML});
+  });
+  const state = { lastIndustry, convTurn, messages: saved, savedAt: Date.now() };
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+function restoreChat(){
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if(!raw) return false;
+    const state = JSON.parse(raw);
+    if(!state.messages || !state.messages.length) return false;
+    lastIndustry = state.lastIndustry || '';
+    convTurn = state.convTurn || 0;
+    // 隐藏欢迎页
+    const welcome = document.querySelector('.welcome-msg');
+    const guideTags = document.getElementById('guideTags');
+    if(welcome) welcome.style.display = 'none';
+    if(guideTags) guideTags.style.display = 'none';
+    // 恢复消息
+    state.messages.forEach(m => addMsg(m.role, m.html));
+    return true;
+  } catch(e){ return false; }
+}
+
 // ── 行业策略库(第一轮回答) ───────────
 const DB = {
 "烧烤":{cat:"餐饮",answ:`烧烤卖的不是肉串，是江湖气和人情味。记住——让你将来的客户管你叫哥，不是叫老板。
@@ -713,6 +748,7 @@ function addMsg(role, html){
   div.innerHTML = `<div class="msg-bubble">${html}</div>`;
   document.getElementById('chatArea').appendChild(div);
   div.scrollIntoView({behavior:'smooth',block:'end'});
+  saveChat();  // 自动保存对话
 }
 
 function send(){
@@ -761,6 +797,7 @@ function send(){
 
 function resetChat(){
   lastIndustry = ''; convTurn = 0;
+  localStorage.removeItem(CHAT_STORAGE_KEY);  // 清除对话记录
   document.getElementById('chatArea').innerHTML = `
     <div class="welcome-msg">
       <div class="emoji">👋</div>
@@ -775,7 +812,8 @@ function resetChat(){
   document.getElementById('chatInput').focus();
 }
 
-initGuideTags();
+// ── 页面加载 ──────────────────────
+if(!restoreChat()){ initGuideTags(); }
 </script>
 </body>
 </html>
