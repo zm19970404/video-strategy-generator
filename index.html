@@ -1136,18 +1136,27 @@ function addMsg(role, html){
   saveChat();  // 自动保存对话
 }
 
-// ── LLM 兜底 ──────────────────────────
+// ── LLM 兜底（走本地cc-switch代理, 跟需求系统一样的）─
 async function askLLM(userText){
   if(!lastIndustry) return null;
   const msgs = chatHistory.concat([{role:'user',content:userText}]);
+
+  const systemPrompt = `你是"行业百问"——一个抖音短视频拍摄策略顾问。风格:直白、大白话、每句话都能落地执行。不说方法论术语。像一个做了很多年短视频的人在聊天。用户在做"${lastIndustry}"行业。你的回答不超过300字,结尾留一个引导他继续聊的问题。`;
+
   try{
-    const resp = await fetch('/api/chat', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({messages: msgs, industry: lastIndustry})
+    // 走本地cc-switch代理(跟需求系统一样)
+    const resp = await fetch('http://127.0.0.1:15721/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':'PROXY_MANAGED','anthropic-version':'2023-06-01'},
+      body: JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:systemPrompt,messages:msgs.slice(-8)})
     });
     if(!resp.ok) return null;
     const data = await resp.json();
-    return data.reply || null;
+    const content = data.content||[];
+    let text = '';
+    if(Array.isArray(content)){ text = content.map(c=>c.text||'').join(''); }
+    else { text = String(content); }
+    return text||null;
   } catch(e){ return null; }
 }
 
