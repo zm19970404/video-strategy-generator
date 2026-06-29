@@ -1181,7 +1181,8 @@ async function send(){
   let botHtml = '';
 
   setTimeout(async () => {
-    typing.classList.remove('show');
+    // 先出本地答案（不关typing）
+    let needsLLM = false;
 
     if(text === '@管理' || text === '@admin'){
       showAdminPanel();
@@ -1200,20 +1201,24 @@ async function send(){
       lastIndustry = match.key; convTurn = 1;
       botHtml = match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
     } else {
-      // 第二轮以后：先走本地引擎
       const match = matchIndustry(lastIndustry);
       const cat = match.cat || '';
       botHtml = getFollowup(text, lastIndustry, cat);
       convTurn++;
-
-      // 如果本地引擎给了兜底通用回复 → 交给LLM
       if(isGenericResponse(botHtml)){
-        const llmReply = await askLLM(text);
-        if(llmReply && llmReply.length > 10){
-          botHtml = llmReply + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('还能再详细一点吗')">再详细点</button><button class="followup-btn" onclick="quickFollow('有没有其他方法')">其他方法</button></div>`;
-        }
+        needsLLM = true;
       }
     }
+
+    // 本地引擎兜不住 → 交给LLM（保持typing状态）
+    if(needsLLM){
+      const llmReply = await askLLM(text);
+      if(llmReply && llmReply.length > 10){
+        botHtml = llmReply + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('还能再详细一点吗')">再详细点</button><button class="followup-btn" onclick="quickFollow('有没有其他方法')">其他方法</button></div>`;
+      }
+    }
+
+    typing.classList.remove('show');
 
     // 记录机器人回复
     chatHistory.push({role:'assistant', content:botHtml.replace(/<[^>]+>/g,'').slice(0,300)});
