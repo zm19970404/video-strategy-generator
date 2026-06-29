@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>行业百问 · 你做什么的，我告诉你怎么拍</title>
+<title>行业百问 · 多轮对话 · 你做什么的，我告诉你怎么拍</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#0f0f0f;color:#e8e8e8;height:100vh;display:flex;flex-direction:column}
@@ -11,23 +11,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .header h1{font-size:20px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .header .sub{font-size:12px;color:#555;margin-top:2px}
 
-/* 聊天区 */
 .chat-area{flex:1;overflow-y:auto;padding:12px 16px 18px;scroll-behavior:smooth}
 .chat-area::-webkit-scrollbar{width:4px}
 .chat-area::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:99px}
 
-/* 引导消息 */
 .welcome-msg{text-align:center;padding:20px 0 12px}
 .welcome-msg .emoji{font-size:40px;margin-bottom:8px}
 .welcome-msg .msg{font-size:15px;color:#bbb;line-height:1.8;margin-bottom:3px}
 .welcome-msg .msg b{color:#60a5fa}
 
-/* 快捷入口 */
 .guide-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:8px 0 16px}
 .guide-tag{padding:7px 14px;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:99px;font-size:12px;color:#888;cursor:pointer;transition:.2s;font-family:inherit}
 .guide-tag:hover{border-color:#60a5fa;color:#e0e0e0}
 
-/* 消息气泡 */
 .msg-row{display:flex;margin-bottom:14px;animation:msgIn .25s ease-out}
 .msg-row.user{justify-content:flex-end}
 .msg-row.bot{justify-content:flex-start}
@@ -39,9 +35,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .msg-bubble .section-title{font-weight:700;color:#60a5fa;margin-top:10px;margin-bottom:4px;font-size:13px;display:flex;align-items:center;gap:4px}
 .msg-row.user .msg-bubble .section-title{color:rgba(255,255,255,.8)}
 .msg-bubble .highlight{color:#f59e0b;font-weight:600}
-.key-point{padding:10px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;margin-top:10px;font-size:12px;color:#f59e0b;line-height:1.8}
+.msg-bubble .followup-hint{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+.followup-btn{padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:99px;font-size:11px;color:#aaa;cursor:pointer;font-family:inherit;transition:.2s}
+.followup-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 
-/* 正在输入 */
 .typing{display:none;align-items:center;gap:6px;padding:10px 14px;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:14px;margin-bottom:14px;font-size:12px;color:#888;max-width:200px}
 .typing.show{display:flex}
 .typing .dot{width:6px;height:6px;border-radius:50%;background:#666;animation:dotBounce 1.4s infinite}
@@ -49,7 +46,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .typing .dot:nth-child(3){animation-delay:.4s}
 @keyframes dotBounce{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
 
-/* 输入区 */
 .input-bar{flex-shrink:0;padding:10px 16px 24px;background:#0f0f0f;border-top:1px solid #1a1a2e}
 .input-row{display:flex;gap:8px}
 .input-row input{flex:1;padding:12px 16px;background:#1a1a2e;border:1.5px solid #2a2a3e;border-radius:99px;color:#e8e8e8;font-size:15px;outline:none;font-family:inherit;transition:.2s}
@@ -58,7 +54,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .input-row button{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa);border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .input-row button:disabled{opacity:.4}
 
-/* 重置按钮 */
 .reset-bar{text-align:center;padding:4px 0 12px}
 .reset-btn{background:none;border:none;color:#555;font-size:11px;cursor:pointer;font-family:inherit}
 .reset-btn:hover{color:#888}
@@ -70,7 +65,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 
 <div class="header">
   <h1>📹 行业百问</h1>
-  <div class="sub">你做什么的，我告诉你怎么拍</div>
+  <div class="sub">你做什么的，我告诉你怎么拍 · 可以一直聊下去</div>
 </div>
 
 <div class="chat-area" id="chatArea">
@@ -78,11 +73,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
     <div class="emoji">👋</div>
     <div class="msg">告诉我你是<b>做什么行业的</b></div>
     <div class="msg" style="font-size:13px;color:#666;margin-top:4px">我把怎么拍、拍什么、怎么变现直接告诉你</div>
+    <div class="msg" style="font-size:13px;color:#666">可以一直聊——你有什么问题接着问就行</div>
   </div>
   <div class="guide-tags" id="guideTags"></div>
 </div>
 
-<div class="typing" id="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span>正在想你这个行业该怎么拍...</div>
+<div class="typing" id="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
 
 <div class="input-bar">
   <div class="input-row">
@@ -94,9 +90,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <script>
-// ── 行业答案库（与之前的DB数据一致，改为对话口吻） ──
+// ── 上下文记忆 ──────────────────────
+let lastIndustry = '';  // 记住当前在聊什么行业
+let convTurn = 0;       // 对话轮次
+
+// ── 行业策略库(第一轮回答) ───────────
 const DB = {
-"烧烤":`烧烤卖的不是肉串，是江湖气和人情味。记住啊——让你将来的客户管你叫哥，不是叫老板。
+"烧烤":{cat:"餐饮",answ:`烧烤卖的不是肉串，是江湖气和人情味。记住——让你将来的客户管你叫哥，不是叫老板。
 
 <div class="section-title">📹 日常引流</div>
 <div class="shot-item"><b>①</b> 拍你凌晨去菜市场进货——蹲在肉摊前面用手捏一捏、凑近看一眼。这动作比你说一百句"我家肉新鲜"都有用。</div>
@@ -108,10 +108,9 @@ const DB = {
 <div class="section-title">📹 同城搜索</div>
 <div class="shot-item">店名、地址、营业时间打在每条标题上。号多弄一点——同城饱和式打击，别死磕一个号。</div>
 
-<div class="section-title">💰 怎么变现</div>
-<div class="shot-item">肉串烤得一般的——把人情味拉满。技术一流的——当我放屁，你随便拍。抠抠搜搜的烧烤店等着倒闭。</div>`,
+<span class="highlight">肉串烤得一般的——把人情味拉满。技术一流的——当我放屁，你随便拍。抠抠搜搜的烧烤店等着倒闭。</span>`},
 
-"美发":`美发两条路。技术牛逼的走一条，技术一般的走另一条。
+"美发":{cat:"美业",answ:`美发两条路。技术牛逼的走一条，技术一般的走另一条。
 
 <div class="section-title">📹 有技术</div>
 <div class="shot-item"><b>①</b> 拍造型前后变化——剪之前一张脸，剪之后同一张脸。三秒一个视频。客户自己会来。</div>
@@ -124,9 +123,9 @@ const DB = {
 <div class="section-title">📹 接本地客户</div>
 <div class="shot-item">找几个朋友假装顾客，拍他们做完头发自己照镜子笑了的那一刻——不是摆拍的笑，是满意的笑。那个笑就是你最好的广告。</div>
 
-<span class="highlight">一句话：有本事靠技术吃饭，没本事靠产品吃饭。都行。</span>`,
+<span class="highlight">一句话：有本事靠技术吃饭，没本事靠产品吃饭。都行。</span>`},
 
-"卖酒":`卖酒最重要的是ID。没有ID，酒再好也没人信你。
+"卖酒":{cat:"零售",answ:`卖酒最重要的是ID。没有ID，酒再好也没人信你。
 
 <div class="section-title">📹 建立信任</div>
 <div class="shot-item"><b>①</b> 客户拿酒来回收——你看两眼直接说"你买的时候被人骗了，这个是假的"。然后教他怎么辨别真假，一个细节一个细节指给他看。全过程闲聊。</div>
@@ -136,9 +135,31 @@ const DB = {
 <div class="shot-item">"福建这边一旦会10块到20块的砸客户——这里面打的很脏，我这里不方便说。你硬要做，私下找我。"欲言又止的感觉。</div>
 
 <div class="section-title">📹 搜索流量</div>
-<div class="shot-item">短科普——怎么看酒花、怎么看年份、真假茅台的三个区别。讲清楚就行，不用花哨。</div>`,
+<div class="shot-item">短科普——怎么看酒花、怎么看年份、真假茅台的三个区别。讲清楚就行，不用花哨。</div>`},
 
-"卖茶叶":`茶叶最重要的——做ID。
+"房产中介":{cat:"房地产",answ:`租房这块属于搜索绩效型赛道。你要做的第一件事不是想怎么拍——是弄到100个号，同城饱和式打击。
+
+<div class="section-title">📹 每一套房怎么拍</div>
+<div class="shot-item"><b>①</b> 先讲优点、再说缺点——"这个房子采光很好，但是厨房小，你要是天天做饭可能不够用"。真诚到骨子里。</div>
+<div class="shot-item"><b>②</b> 结尾编一个客户信息——"如果你是月薪5000的在哪哪上班，我不建议你住。但月薪8000的可以考虑"。从客户角度出发。</div>
+<div class="shot-item"><b>③</b> 拍你自己在房子里看窗外、看采光、看邻居门口。观众想知道的是你怎么判断这房子值不值。</div>
+
+<div class="section-title">📹 写字楼中介玩法</div>
+<div class="shot-item">"这个房间原先住过一个人——最早推着车卖袜子起步，赚了第一个10万租了这里，然后干到200万，现在去北京了。"故事讲曲折一点，像导游讲故事但只讲不乱走。更新10条后，第11条开始每条结尾加"租金多少，需要的找我"。</div>`},
+
+"纹身":{cat:"美业",answ:`纹身两种内容交叉做。
+
+<div class="section-title">📹 第一种——搞笑引流</div>
+<div class="shot-item">买奇怪的纹身贴——小猪佩奇、天线宝宝。顾客说要纹这个，你很诧异，最后还是纹了。</div>
+<div class="shot-item">配合人设一起做——未成年来纹你骂走；有人纹"爱谁谁一辈子"你拒了讲道理。过程一定要露出自己好看的花臂——体现技术、风趣、正直。</div>
+
+<div class="section-title">📹 第二种——搜索流量</div>
+<div class="shot-item">把技术展现出来就行。同城搜索——店名地址打上去，号多开一点。</div>
+
+<div class="section-title">📹 乡镇玩法</div>
+<div class="shot-item">每个来的人都采访——做什么的、怎么赚钱的、为什么能开这么好的车。闲聊的方式。结尾说保养得很好。做上100条乡镇基本都知道你了。</div>`},
+
+"卖茶叶":{cat:"零售",answ:`茶叶最重要的——做ID。
 
 <div class="section-title">📹 打信任</div>
 <div class="shot-item"><b>①</b> 第一视角泡茶全流程——边泡茶边讲故事。茶叶的核心不是多好喝，是故事讲得好不好。故事讲好了，茶叶自然卖得好。</div>
@@ -149,47 +170,24 @@ const DB = {
 <div class="shot-item"><b>②</b> 客户返图——"来看看这是刚去新家的宝宝，客户返新的视频啦"。</div>
 <div class="shot-item"><b>③</b> 直播品种鉴定——边鉴定边卖自己的。自然就转过来了。</div>
 
-<div class="section-title">📹 行业真相</div>
-<div class="shot-item">福建这边10到20块砸客户——这行打的很脏。不方便说太细。你硬要做私下找我。</div>`,
+<span class="highlight">福建这边10到20块砸客户——这行打的很脏。不方便说太细。你硬要做私下找我。</span>`},
 
-"房产中介":`租房这块属于搜索绩效型赛道。你要做的第一件事不是想怎么拍——是弄到100个号，同城饱和式打击。
-
-<div class="section-title">📹 每一套房怎么拍</div>
-<div class="shot-item"><b>①</b> 先讲优点、再说缺点——"这个房子采光很好，但是厨房小，你要是天天做饭可能不够用"。真诚到骨子里。</div>
-<div class="shot-item"><b>②</b> 结尾编一个客户信息——"如果你是月薪5000的在哪哪上班，我不建议你住。但月薪8000的可以考虑"。从客户角度出发。</div>
-<div class="shot-item"><b>③</b> 拍你自己在房子里看窗外、看采光、看邻居门口。观众想知道的是你怎么判断这房子值不值。</div>
-
-<div class="section-title">📹 写字楼中介玩法</div>
-<div class="shot-item">"这个房间原先住过一个人——最早推着车卖袜子起步，赚了第一个10万租了这里，然后干到200万，现在去北京了。"故事讲曲折一点，像导游讲故事但只讲不乱走。更新10条后，第11条开始每条结尾加"租金多少，需要的找我"。名字改成XX中介，别起什么暴躁老奶大战奥特曼。</div>`,
-
-"纹身":`纹身两种内容交叉做。
-
-<div class="section-title">📹 第一种——搞笑引流</div>
-<div class="shot-item">买奇怪的纹身贴——小猪佩奇、天线宝宝。顾客说要纹这个，你很诧异，最后还是纹了。</div>
-<div class="shot-item">配合人设一起做——未成年来纹你骂走；有人纹"爱谁谁一辈子"你拒了讲道理。过程一定要露出自己好看的花臂——体现技术、风趣、正直。</div>
-
-<div class="section-title">📹 第二种——搜索流量</div>
-<div class="shot-item">把技术展现出来就行。同城搜索——店名地址打上去，号多开一点。</div>
-
-<div class="section-title">📹 乡镇玩法</div>
-<div class="shot-item">每个来的人都采访——做什么的、怎么赚钱的、为什么能开这么好的车。闲聊的方式。结尾说保养得很好。做上100条乡镇基本都知道你了。</div>`,
-
-"二手车":`<div class="section-title">📹 怎么引流</div>
+"二手车":{cat:"汽车",answ:`<div class="section-title">📹 怎么引流</div>
 <div class="shot-item">请100个精神小伙来试驾——骑之前戴着金链子歪脖子，戴头盔上车就是超帅机车少年。拍前后对比。反差就是流量。</div>
 
 <div class="section-title">📹 怎么成交</div>
-<div class="shot-item">跟客户闲聊——做什么的呀、怎么赚钱的、能不能教教我。你谦逊一点。同城圈子就那么大，那个圈子的人会被同圈子的人吸引。慢慢你就在圈子里了。</div>`,
+<div class="shot-item">跟客户闲聊——做什么的呀、怎么赚钱的、能不能教教我。你谦逊一点。同城圈子就那么大，那个圈子的人会被同圈子的人吸引。慢慢你就在圈子里了。</div>`},
 
-"摄影":`<div class="section-title">📹 约拍</div>
+"摄影":{cat:"服务",answ:`<div class="section-title">📹 约拍</div>
 <div class="shot-item">出去扫街拍美女帅哥，打出照片送人家——拍人家收到照片的惊喜状态。最好城市是旅游城市，会有不断来的游客找跟拍。</div>
 
 <div class="section-title">📹 活动跟拍</div>
 <div class="shot-item">开头"一天5000的活动，摄影都要干什么？"第一人称记录。记住——哪怕你没5000一天也要说有，不然来的都是低客单的。</div>
 
 <div class="section-title">📹 剪辑接单</div>
-<div class="shot-item">宣传抖音各种美女，10万粉后——美女的榜一大哥会来找你派单，让你剪辑宣传他的主播。</div>`,
+<div class="shot-item">宣传抖音各种美女，10万粉后——美女的榜一大哥会来找你派单，让你剪辑宣传他的主播。</div>`},
 
-"宠物店":`宠物做的是信任。
+"宠物店":{cat:"服务",answ:`宠物做的是信任。
 
 <div class="section-title">📹 引流</div>
 <div class="shot-item"><b>①</b> 吐槽市场乱象——"这品相你跟我说纯的？"别点名。</div>
@@ -198,97 +196,130 @@ const DB = {
 
 <div class="section-title">📹 成交</div>
 <div class="shot-item"><b>①</b> 品种鉴定——拍你怎么辨别品相、健康、性格。边鉴定边介绍自家的。</div>
-<div class="shot-item"><b>②</b> 直播品种鉴定——边鉴定边卖。转化最快。</div>`,
+<div class="shot-item"><b>②</b> 直播品种鉴定——边鉴定边卖。转化最快。</div>`},
 
-"清吧":`清吧跟烧烤一个道理——背后都是人情味和江湖气。
+"清吧":{cat:"餐饮",answ:`清吧跟烧烤一个道理——背后都是人情味和江湖气。
 
 <div class="shot-item"><b>①</b> 拍第一视角听最久的客户吹牛逼——日常打流量。</div>
 <div class="shot-item"><b>②</b> 拍今晚全场消费你买单——站起来、举杯、大吼一声。</div>
 <div class="shot-item"><b>③</b> 拍你给每桌送酒——自己送，不是服务员。走到桌边说"这瓶算我的"。</div>
 <div class="shot-item"><b>④</b> 拍你每桌敬酒——跟熟人聊、跟新客寒暄。</div>
 
-<span class="highlight">抠抠搜搜的清吧，等着倒闭。</span>`,
+<span class="highlight">抠抠搜搜的清吧，等着倒闭。</span>`},
 
-"摆摊":`摆摊两条路线。
+"摆摊":{cat:"餐饮",answ:`摆摊两条路线。
 
 <div class="section-title">📹 第一种——展现赚钱</div>
 <div class="shot-item">全部以钱为开头——"5块"→做一会→"您拿好"。"10块"→做一会→"您拿好"。中间穿插"排队排队，稍等一下"。要热闹，不热闹请托站边上。结尾算今天赚了多少。</div>
 
 <div class="section-title">📹 第二种——剧情</div>
-<div class="shot-item">学校门口摆摊。妈妈接孩子先自己吃，孩子想吃妈妈说垃圾食品别吃。第二天妈妈来买，你说是垃圾食品不卖她。她说要"大份的"，你说"好嘞"。一周两三条。</div>
+<div class="shot-item">学校门口摆摊。妈妈接孩子先自己吃，孩子想吃妈妈说垃圾食品别吃。第二天妈妈来买，你说是垃圾食品不卖她。她说要"大份的"，你说"好嘞"。一周两三条。</div>`},
 
-<div class="section-title">📹 想做招商</div>
-<div class="shot-item">第一视角拍摆摊一天赚1000起。自己做不到就别割韭菜。美化开头、简化过程、强调结尾。</div>`,
+"少儿培训":{cat:"教育",answ:`<div class="shot-item">第一视角严厉地去拍——谁不听话就严厉地改正他。家长把孩子给你是希望你帮他管好孩子。</div>
+<div class="shot-item">记住——是严厉不是凶。中国家长在学习这块的心态你又不是不知道。不要太和善——和善了他会觉得你没在管。你只能先要能接受严厉这类家长。两个都要不可能。</div>`},
 
-"少儿培训":`<div class="shot-item">第一视角严厉地去拍——谁不听话就严厉地改正他。家长把孩子给你是希望你帮他管好孩子。</div>
-<div class="shot-item">记住——是严厉不是凶。中国家长在学习这块的心态你又不是不知道。不要太和善——和善了他会觉得你没在管。你只能先要能接受严厉这类家长。两个都要不可能。</div>`,
+"舞蹈老师":{cat:"教育",answ:`分成人舞蹈和儿童舞蹈。三个方向轮着来。
 
-"舞蹈老师":`分成人舞蹈和儿童舞蹈。
-
-<div class="section-title">📹 三个方向轮着来</div>
 <div class="shot-item"><b>①</b> 技巧教学——边上跟一个学员，你教她做，错了重来对了点头。</div>
 <div class="shot-item"><b>②</b> 和一个学员跳完整片段——你站前面她在后面。好不好看不重要，但一定要有。</div>
-<div class="shot-item"><b>③</b> 你站前面后面一排学员——前三秒教怎么跳，下一秒所有人跟你一起起舞。那个画面本身就震撼。</div>`,
+<div class="shot-item"><b>③</b> 你站前面后面一排学员——前三秒教怎么跳，下一秒所有人跟你一起起舞。那个画面本身就震撼。</div>`},
 
-"汽修":`<div class="section-title">📹 两条路</div>
+"汽修":{cat:"汽车",answ:`<div class="section-title">📹 两条路</div>
 <div class="shot-item"><b>①</b> 把牙刷的卖了——弄个整备车间，旧车收拾干净再卖。利润高了就不用拍视频了。</div>
-<div class="shot-item"><b>②</b> 找演员找台车——本质就是听醉酒的大哥吹牛逼。结尾记录今天赚多少。全国各地都能抄。</div>`,
+<div class="shot-item"><b>②</b> 找演员找台车——本质就是听醉酒的大哥吹牛逼。结尾记录今天赚多少。全国各地都能抄。</div>`},
 
-"家电清洗":`同城搜索流量——怎么体现你们靠谱怎么拍。号要多。有美女帅哥的话事半功倍。直接找同行视频混剪然后同城本地推。同城搜索又不是要打爆，饱和式打击就够了。`,
+"家电清洗":{cat:"家政",answ:`同城搜索流量——怎么体现你们靠谱怎么拍。号要多。有美女帅哥的话事半功倍。直接找同行视频混剪然后同城本地推。同城搜索又不是要打爆，饱和式打击就够了。`},
 
-"家具":`拍别人向往的生活和生活态度。没有就别拍了——除非你有不一样的优势或身份背书。
-
-介绍场地、服务设施、价格。同城饱和式打击。找几个美女帅哥过来坐坐拍拍，效果更好。`,
-
-"花店":`<div class="section-title">📹 两个方向</div>
-<div class="shot-item"><b>①</b> 拍包花过程——从散花到成品，中间快剪。配温柔音乐。日常打流量。</div>
-<div class="shot-item"><b>②</b> 深夜偷偷去别人菜地/果园——给其中一株专门施肥，这株长得比别人快结果比别人多。最好增加绿植鲜花的比例。做TOC。</div>`,
-
-"蛋糕店":`<div class="section-title">📹 怎么拍</div>
+"蛋糕店":{cat:"餐饮",answ:`<div class="section-title">📹 怎么拍</div>
 <div class="shot-item"><b>①</b> 拍做蛋糕全过程——打蛋、搅拌、入模、出炉、裱花，中间快剪，最后成品。手艺好就是最好的广告。</div>
 <div class="shot-item"><b>②</b> 客户定制对比——"客户想要这样的，我做出来了"。就这种。</div>
-<div class="shot-item"><b>③</b> 店名地址打标题上。同城搜索流量。号多弄一点。</div>`,
+<div class="shot-item"><b>③</b> 店名地址打标题上。同城搜索流量。号多弄一点。</div>`},
 
-"民宿":`拍别人向往的生活和生活态度。没有就别拍了——除非你有不一样的优势或身份背书。
+"花店":{cat:"零售",answ:`<div class="section-title">📹 两个方向</div>
+<div class="shot-item"><b>①</b> 拍包花过程——从散花到成品，中间快剪。配温柔音乐。日常打流量。</div>
+<div class="shot-item"><b>②</b> 深夜偷偷去别人菜地/果园——给其中一株专门施肥，这株长得比别人快结果比别人多。最好增加绿植鲜花的比例。做TOC。</div>`},
 
-<div class="shot-item">把研究生身份作为主要身份——研究生日常兼职如何养活自己还不耽误学业。身份和故事比民宿本身好看。</div>`,
+"民宿":{cat:"酒店",answ:`拍别人向往的生活和生活态度。没有就别拍了——除非你有不一样的优势或身份背书。
 
-"钓鱼":`<div class="section-title">📹 这个方向画面感很强</div>
-<div class="shot-item">出门前被老婆骂——"今天钓不到鱼就别回来了"。第一视角没钓到。去菜市场买鱼回家做给老婆吃。老婆吃完说"野生的就是比菜市场香"。拍出老婆傻傻的样子。换不同的鱼、不同的菜场、不同的做法反复拍。</div>`,
+<div class="shot-item">把研究生身份作为主要身份——研究生日常兼职如何养活自己还不耽误学业。身份和故事比民宿本身好看。</div>`},
 
-"洗车":`同城搜索流量——不需要自己拍，直接找同行视频混剪。同城本地推。号多弄一点——同城搜索又不是要打爆量，想那么多干嘛。`,
+"钓鱼":{cat:"户外",answ:`<div class="section-title">📹 这个方向画面感很强</div>
+<div class="shot-item">出门前被老婆骂——"今天钓不到鱼就别回来了"。第一视角没钓到。去菜市场买鱼回家做给老婆吃。老婆吃完说"野生的就是比菜市场香"。拍出老婆傻傻的样子。换不同的鱼、不同的菜场、不同的做法反复拍。</div>`},
 
-"成人用品":`<div class="shot-item">配品里收到黄金项链。配品里收到一袋子现金。拍你拆包裹的反应——惊讶、不敢相信、赶紧拿起来看。就这个。</div>`,
+"家具":{cat:"零售",answ:`拍别人向往的生活和生活态度。没有就别拍了——除非你有不一样的优势或身份背书。介绍场地、服务设施、价格。同城饱和式打击。找几个美女帅哥过来坐坐拍拍，效果更好。`},
 
-"卖牙刷":`把牙刷的卖了，你就是百万富翁了。还拍啥拍。`,
+"洗车":{cat:"汽车",answ:`同城搜索流量——不需要自己拍，直接找同行视频混剪。同城本地推。号多弄一点。饱和式打击。`},
 
-"知识付费":`做短视频最可怕的不是没技术，是你困在自己的认知里面打转。为什么别人能快速起号快速变现？他们有圈子、有前辈带路，你在黑暗中摸索。其实就是一层窗户纸——找对人点拨几分钟的事，何必浪费几个月。先学会入圈。`,
+"成人用品":{cat:"零售",answ:`配品里收到黄金项链。配品里收到一袋子现金。拍你拆包裹的反应——惊讶、不敢相信、赶紧拿起来看。就这个。`},
 
-"通用":`<div class="section-title">📹 不知道拍什么，先试这四个</div>
-<div class="shot-item"><b>①</b> 拍你干活过程中的一个真实瞬间。不是成品，是过程。你在搬货、在打包、在跟客户打电话——就拍你最日常的那个动作。</div>
-<div class="shot-item"><b>②</b> 拍你踩过的坑——"干了这么多年XX，直到上个月才发现一件事..."。开门见山讲真实经历。结尾落一个建议。</div>
-<div class="shot-item"><b>③</b> 拍你跟客户的一次真实对话。不用剧本。服务时开着手机录一段。敏感信息模糊掉。真实的永远比编的好看。</div>
-<div class="shot-item"><b>④</b> 拍你的价格——"做一次多少钱、用什么东西、多久能好、跟便宜的有什么区别"。四个问题一个个回答。这是同城搜索最好的内容。</div>
+"卖牙刷":{cat:"零售",answ:`把牙刷的卖了，你就是百万富翁了。还拍啥拍。`},
 
-<span class="highlight">搞流量的核心就四个——钱、冲突、反差、情绪。一样没有的，再好的画面也火不了。</span>
-<span class="highlight" style="display:block;margin-top:6px">同城生意：号多比号精重要。饱和式打击。</span>
-<span class="highlight" style="display:block">产品生意：先做人设再卖货。没人设怎么拍都是推销。</span>`
+"知识付费":{cat:"知识",answ:`做短视频最可怕的不是没技术，是你困在自己的认知里面打转。为什么别人能快速起号快速变现？他们有圈子、有前辈带路，你在黑暗中摸索。其实就是一层窗户纸——找对人点拨几分钟的事，何必浪费几个月。先学会入圈。`},
 };
 
-const HOT_TAGS = ["烧烤","美发","卖酒","房产中介","纹身","卖茶叶","二手车","摄影","宠物店","清吧","摆摊","少儿培训","舞蹈老师","汽修","花店","蛋糕店","民宿","钓鱼","家政","健身","美甲","酒吧","火锅","奶茶","装修","二手车","家电清洗","洗车","知识付费"];
+// ── 追问知识库(第二轮以后基于行业和关键词) ──
+function getFollowup(question, industry, cat){
+  const q = question.toLowerCase();
+  const icat = cat||'';
 
-function initGuideTags(){
-  const shuffled = [...HOT_TAGS].sort(()=>Math.random()-.5).slice(0,12);
-  document.getElementById('guideTags').innerHTML = shuffled.map(t=>
-    `<button class="guide-tag" onclick="quickAsk('${t}')">${t}</button>`
-  ).join('');
+  // 刚开/新手/没经验
+  if(q.includes('刚开')||q.includes('新手')||q.includes('没经验')||q.includes('刚开始')||q.includes('新店')){
+    if(icat==='餐饮') return `刚开的话，先别想着拍多好。前两周就做一件事——<span class="highlight">每天发一条</span>，内容就拍你店里最真实的那个瞬间。你凌晨去菜市场、你备菜的样子、你第一桌客人进来的时候。不用剪辑、不用配乐、不用字幕。抖音会给你第一波同城流量——你只要能坚持两周，算法就开始认识你了。\n\n<div class="shot-item">记住啊，新店最容易犯的错是一上来就想出爆款。爆款是量的结果，不是技巧的结果。</div>`;
+    if(icat==='美业') return `刚入行——先不急着拍技术。先拍你<b>练习的过程</b>。你做坏了的样子、你不太满意又重来一遍的样子。观众看的不是你技术多好，是你这个人是不是真的在学。真诚比技术更能拉新客。\n\n<div class="shot-item">前两周就拍一条：你今天练了什么、哪里没做好、打算怎么改。就这三句。</div>`;
+    if(icat==='零售') return `刚入行，第一步不是拍视频——是搞清楚<b>你比隔壁那家好在哪</b>。想不出来就别急着拍。想出来了——把你那个"不一样"拍成一句话。"别人都在卖XX，我只卖XX"——就这么一句，打在你第一条视频的第一秒。\n\n<div class="shot-item">没明白的话你跟我说——你做这个多久了、跟隔壁最大的区别是什么。我帮你找那个第一句话。</div>`;
+    return `刚入行啊——那先别急着拍。第一件事：<b>搞清楚你的客户最怕什么。</b>你做${industry}，你的客户在找你之前最怕踩什么坑？想出来了吗？想出来了——你的第一条视频就是告诉他"我知道你在怕什么"。\n\n<div class="shot-item">还没想出来的话你告诉我——你的客户一般问你什么问题问得最多？</div>`;
+  }
+
+  // 不想露脸/不出镜
+  if(q.includes('露脸')||q.includes('出镜')||q.includes('不想拍')||q.includes('害羞')||q.includes('不敢')||q.includes('不好意思')){
+    return `不想露脸完全没问题——做${industry}有很多不用脸的内容。
+
+<div class="shot-item"><b>①</b> 第一视角拍你的手在干活。从头到尾不拍脸。只要你的手在动、在做东西——观众自己会脑补。</div>
+<div class="shot-item"><b>②</b> 拍你的产品/环境。用手机慢慢扫一圈，配一段你自己说的话（录音就行，不用出镜）。</div>
+<div class="shot-item"><b>③</b> 让别人出镜——你有员工、搭档、朋友吧？让他们当主角，你拍他们。</div>
+
+<span class="highlight">记住——观众在乎的是你给的东西值不值，不是你长什么样。</span>`;
+  }
+
+  // 没预算/没钱投
+  if(q.includes('预算')||q.includes('没钱')||q.includes('投入')||q.includes('成本')||q.includes('花钱')){
+    return `预算不多的话——<span class="highlight">就用你现在手里的手机</span>。不需要设备、不需要灯光、不需要找人拍。画质不重要——重要是你拍的东西是不是让人想看第二眼。\n\n<div class="shot-item">钱解决不了"不知道拍什么"的问题。你看那些跟你同行业的——他们设备可能比你好、灯光比你好、剪辑比你好。但播放量跟你差不多。为什么？因为他们拍的东西跟客户没关系。你现在开始，一部手机、每天一条——就已经比他们领先了一个认知。</div>`;
+  }
+
+  // 怎么变现/收钱
+  if(q.includes('变现')||q.includes('赚钱')||q.includes('收钱')||q.includes('付费')||q.includes('怎么卖')){
+    if(icat==='餐饮'||icat==='零售') return `做${industry}这种实体生意，视频变现就两条路：\n\n<b>①</b> 把本地客户拉到店里——这是你最该做的。每条视频告诉别人"你在哪、做什么、什么价位"。同城搜索流量就这么简单。\n\n<b>②</b> 卖东西——你有产品的话（比如烧烤调料、秘制配方料包），拍了过程之后带一句"这个料包我自己做的，想要的私信"。\n\n<div class="shot-item">千万别一上来就挂链接卖课卖加盟——你没有量的时候做那个是浪费时间。先让你的店坐满。</div>`;
+    return `做${industry}这个行业的视频变现，核心就一个——<b>先让别人觉得你靠谱，再告诉他自己怎么找你。</b>\n\n<div class="shot-item">视频里不用喊"找我"。你只需要在每条的结尾留一个自然的口子——"想知道更多细节的，私信我"。想找的人自己会找。</div>`;
+  }
+
+  // 没人看/没流量
+  if(q.includes('没流量')||q.includes('没人看')||q.includes('播放量')||q.includes('浏览量')){
+    return `发了没人看——正常。你刚开始发的前十几条，大概率就是几十个播放。不是因为内容不好，是因为<b>算法还不知道你是谁、该把你的视频推给谁。</b>\n\n<div class="shot-item">解决办法不是发爆款——是稳定发。每周至少发三四条、发了两个月没断过——等算法摸清了你的定位，播放量自己就起来了。</div>\n\n<span class="highlight">前30条内容不要追求播放量，追求"每一条都在告诉同一个人你是谁"。你是在跟算法做自我介绍。</span>`;
+  }
+
+  // 没时间
+  if(q.includes('没时间')||q.includes('忙')||q.includes('没空')){
+    return `忙的话——不需要天天拍。你一天只拍一条，甚至一周拍两条都行。但<b>拍的那一条一定要对。</b>\n\n<div class="shot-item">很多人是拍了一大堆没用的，才没时间。你不是没时间——你是没找到"只拍一条就对"的方法。你告诉我，你一周最多能抽出多久拍？我帮你想最高效的那个画面。</div>`;
+  }
+
+  // 怎么开始/第一步
+  if(q.includes('怎么开始')||q.includes('第一步')||q.includes('从哪')||q.includes('怎么入手')){
+    return `第一步——<b>今天就打开手机拍一条。</b>不用想标题、不用想内容、不用想怎么剪。就拍你接下来五分钟要做的事。拍完就发。\n\n<div class="shot-item">你是不是觉得我在敷衍你？我是认真的。做${industry}的人最大的问题不是不知道怎么拍——是永远停在"想"这一步。你发了第一条，才有第二条。你发了三十条，才知道哪条是对的。</div>\n\n<span class="highlight">第一条不用好。它唯一的任务就是"发出去"。</span>`;
+  }
+
+  // 没信心/怕别人笑话
+  if(q.includes('怕')||q.includes('担心')||q.includes('笑话')||q.includes('别人')||q.includes('丢人')){
+    return `说实话——你最怕的不是别人笑话。你最怕的是<b>自己发了一条之后没人看，证明了自己不行。</b>我这么跟你说吧——你同行的视频你刷过没有？你觉得他们拍得好吗？不好对吧。但他们发了。他们的客户就是从那些"不好"的视频里来的。\n\n<div class="shot-item">你在犹豫的每一分钟，你的同行都在用你看不上的视频抢你的客户。</div>`;
+  }
+
+  // 通用兜底
+  return `你这个点问得好。做${industry}的，其实大家卡的问题都差不多——不是不知道怎么拍，是不知道拍什么能让人停下来看。\n\n<div class="shot-item">你再多说一点——你现在具体卡在什么地方？是不知道拍什么内容，还是拍了没人看，还是不知道怎么变现？你跟我说清楚了，我帮你往深了拆。</div>\n\n<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('不知道拍什么内容')">不知道拍什么</button><button class="followup-btn" onclick="quickFollow('拍了没人看怎么办')">拍了没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
 }
 
-function quickAsk(tag){ document.getElementById('chatInput').value=`我是做${tag}的`; send(); }
-
+// ── 匹配引擎 ──────────────────────
 function matchIndustry(input){
   const s = input.trim();
-  for(let k of Object.keys(DB)){ if(s.includes(k) || k.includes(s)) return DB[k]; }
+  for(let k of Object.keys(DB)){ if(s.includes(k) || k.includes(s)) return {key:k, ...DB[k]}; }
   const map = {
     "餐饮":"烧烤","饭店":"烧烤","烤肉":"烧烤","火锅":"烧烤","串串":"烧烤","炸串":"摆摊","大排档":"烧烤",
     "理发":"美发","剪发":"美发","发型":"美发","tony":"美发","美甲":"美发","美容":"美发","皮肤管理":"美发","纹绣":"美发",
@@ -315,10 +346,33 @@ function matchIndustry(input){
     "电商":"知识付费","直播":"知识付费","带货":"知识付费",
   };
   for(let [kw, target] of Object.entries(map)){
-    if(s.includes(kw) && DB[target]) return DB[target];
+    if(s.includes(kw) && DB[target]) return {key:target, ...DB[target]};
   }
-  return DB["通用"];
+  return {key:s, cat:"通用", answ:getGenericAnswer(s)};
 }
+
+function getGenericAnswer(industry){
+  return `<div class="section-title">📹 你这个行业我没做深度拆解——但先给你四个能用的方向</div>
+<div class="shot-item"><b>①</b> 拍你干活过程中的一个真实瞬间。不是成品，是过程。你在搬货、在打包、在跟客户打电话——就拍你最日常的那个动作。</div>
+<div class="shot-item"><b>②</b> 拍你踩过的坑——"干了这么多年${industry}，直到上个月才发现一件事..."。开门见山讲真实经历。结尾落一个建议。</div>
+<div class="shot-item"><b>③</b> 拍你跟客户的一次真实对话。不用剧本。服务时开着手机录一段。真实永远比编的好看。</div>
+<div class="shot-item"><b>④</b> 拍你的价格——"做一次多少钱、用什么东西、多久能好、跟便宜的有什么区别"。四个问题一个个回答。这是同城搜索最好的内容。</div>
+
+<span class="highlight">搞流量的核心就四个——钱、冲突、反差、情绪。一样没有的，再好的画面也火不了。</span>
+<span class="highlight" style="display:block;margin-top:6px">你多说一点——你做${industry}多久了、现在最头疼的是什么？我帮你往深了挖。</span>`;
+}
+
+// ── 对话逻辑 ──────────────────────
+const HOT_TAGS = ["烧烤","美发","卖酒","房产中介","纹身","卖茶叶","二手车","摄影","宠物店","清吧","摆摊","少儿培训","舞蹈老师","汽修","花店","蛋糕店","民宿","钓鱼","家电清洗","美甲","酒吧","火锅","奶茶","洗车","知识付费"];
+
+function initGuideTags(){
+  document.getElementById('guideTags').innerHTML = [...HOT_TAGS].sort(()=>Math.random()-.5).slice(0,12).map(t=>
+    `<button class="guide-tag" onclick="quickAsk('${t}')">${t}</button>`
+  ).join('');
+}
+
+function quickAsk(tag){ document.getElementById('chatInput').value=`我是做${tag}的`; send(); }
+function quickFollow(q){ document.getElementById('chatInput').value=q; send(); }
 
 function addMsg(role, html){
   const div = document.createElement('div');
@@ -333,16 +387,13 @@ function send(){
   const text = input.value.trim();
   if(!text) return;
 
-  // Remove welcome
   const welcome = document.querySelector('.welcome-msg');
   const guideTags = document.getElementById('guideTags');
   if(welcome) welcome.style.display = 'none';
   if(guideTags) guideTags.style.display = 'none';
 
-  // Add user message
   addMsg('user', text);
 
-  // Show typing
   const typing = document.getElementById('typing');
   typing.classList.add('show');
   typing.scrollIntoView({behavior:'smooth',block:'end'});
@@ -350,25 +401,39 @@ function send(){
   document.getElementById('btnSend').disabled = true;
   document.getElementById('chatInput').disabled = true;
 
-  // Simulate thinking
   setTimeout(() => {
     typing.classList.remove('show');
-    const result = matchIndustry(text);
-    addMsg('bot', result);
+
+    if(convTurn === 0){
+      // 第一轮：行业识别 → 行业策略
+      const match = matchIndustry(text);
+      lastIndustry = match.key;
+      convTurn = 1;
+      addMsg('bot', match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`);
+    } else {
+      // 第二轮以后：关键词识别 → 追问答案
+      const match = matchIndustry(lastIndustry);
+      const cat = match.cat || '';
+      const resp = getFollowup(text, lastIndustry, cat);
+      convTurn++;
+      addMsg('bot', resp);
+    }
+
     document.getElementById('btnSend').disabled = false;
     document.getElementById('chatInput').disabled = false;
     document.getElementById('chatInput').value = '';
     document.getElementById('chatInput').focus();
-  }, 600 + Math.random()*400);
+  }, 500 + Math.random()*400);
 }
 
 function resetChat(){
-  const area = document.getElementById('chatArea');
-  area.innerHTML = `
+  lastIndustry = ''; convTurn = 0;
+  document.getElementById('chatArea').innerHTML = `
     <div class="welcome-msg">
       <div class="emoji">👋</div>
       <div class="msg">告诉我你是<b>做什么行业的</b></div>
       <div class="msg" style="font-size:13px;color:#666;margin-top:4px">我把怎么拍、拍什么、怎么变现直接告诉你</div>
+      <div class="msg" style="font-size:13px;color:#666">可以一直聊——你有什么问题接着问就行</div>
     </div>
     <div class="guide-tags" id="guideTags"></div>
   `;
