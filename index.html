@@ -922,6 +922,87 @@ function matchIndustry(input){
     if(s.includes(kw) && DB[target]) return {key:target, ...DB[target]};
   }
   return {key:s, cat:"通用", answ:getGenericAnswer(s)};
+
+  // 记录未匹配行业
+  const ts = new Date().toISOString().slice(0,16);
+  try {
+    let unmatched = JSON.parse(localStorage.getItem('vg_unmatched_industries')||'[]');
+    unmatched.unshift({industry:s, time:ts});
+    if(unmatched.length > 200) unmatched = unmatched.slice(0,200); // 只保留最近200条
+    localStorage.setItem('vg_unmatched_industries', JSON.stringify(unmatched));
+  } catch(e){}
+}
+
+// ── 未匹配行业管理 ──────────────
+function viewUnmatched(){
+  try {
+    const raw = localStorage.getItem('vg_unmatched_industries');
+    if(!raw) return [];
+    return JSON.parse(raw);
+  } catch(e){ return []; }
+}
+
+function hasUnmatchedSince(since){
+  const list = viewUnmatched();
+  return list.some(x => x.time > since);
+}
+
+// ── 自动优化提示 ──────────────
+function checkUnmatchedAlert(){
+  const lastChecked = localStorage.getItem('vg_unmatched_checked') || '';
+  const list = viewUnmatched();
+  const newOnes = lastChecked ? list.filter(x => x.time > lastChecked) : list;
+  if(newOnes.length >= 3){
+    const msg = `📊 有 ${newOnes.length} 个新行业未被覆盖：${newOnes.slice(0,3).map(x=>x.industry).join('、')}${newOnes.length>3?'等':''}。可优化。`;
+    if(document.getElementById('cdkOverlay').classList.contains('hidden')){
+      addMsg('bot', `<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px;font-size:12px;color:#f59e0b">${msg}<br><span style="color:#888">输入"@管理"查看全部未覆盖行业</span></div>`);
+    }
+  }
+  localStorage.setItem('vg_unmatched_checked', new Date().toISOString().slice(0,16));
+  // 每天检查一次
+  setTimeout(checkUnmatchedAlert, 86400000);
+}
+
+// ── 管理面板 ──────────────
+function showAdminPanel(){
+  const list = viewUnmatched();
+  if(!list.length){
+    addMsg('bot', '目前没有未覆盖行业。所有用户输入的行业都匹配到了。');
+    return;
+  }
+  // 按出现次数排序
+  const count = {};
+  list.forEach(x => { count[x.industry] = (count[x.industry]||0)+1; });
+  const sorted = Object.entries(count).sort((a,b)=>b[1]-a[1]);
+
+  let html = '<div class="section-title">📊 未覆盖行业统计（最近200条）</div>';
+  html += `<div style="font-size:11px;color:#666;margin-bottom:8px">共 ${list.length} 条记录，${sorted.length} 个不同行业</div>`;
+  html += '<div class="shot-item" style="max-height:300px;overflow-y:auto">';
+  for(let [ind, cnt] of sorted.slice(0,20)){
+    html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a1a3e"><span>${ind}</span><span style="color:#f59e0b">${cnt}次</span></div>`;
+  }
+  html += '</div>';
+  html += '<div style="margin-top:10px;font-size:11px"><button class="followup-btn" onclick="clearUnmatched()">清空记录</button><button class="followup-btn" onclick="exportUnmatched()">导出JSON</button></div>';
+  addMsg('bot', html);
+}
+
+function clearUnmatched(){
+  localStorage.removeItem('vg_unmatched_industries');
+  addMsg('bot', '已清空所有未覆盖行业记录。');
+}
+
+function exportUnmatched(){
+  const list = viewUnmatched();
+  if(!list.length){
+    addMsg('bot','暂无数据。');
+    return;
+  }
+  const json = JSON.stringify(list, null, 2);
+  navigator.clipboard.writeText(json).then(()=>{
+    addMsg('bot','已复制到剪贴板（JSON格式）。可以粘贴给我来优化系统。');
+  }).catch(()=>{
+    addMsg('bot','复制失败。数据如下：<br><pre style="font-size:11px;max-height:200px;overflow:auto">'+json.slice(0,2000)+'</pre>');
+  });
 }
 
 function getGenericAnswer(industry){
@@ -978,7 +1059,9 @@ function send(){
   setTimeout(() => {
     typing.classList.remove('show');
 
-    if(convTurn === 0 || looksLikeNewIndustry(text)){
+    if(text === '@管理' || text === '@admin'){
+      showAdminPanel();
+    } else if(convTurn === 0 || looksLikeNewIndustry(text)){
       // 第一轮（或用户重新说了行业）：行业识别 → 行业策略
       const match = matchIndustry(text);
       lastIndustry = match.key;
@@ -1019,6 +1102,7 @@ function resetChat(){
 
 // ── 页面加载 ──────────────────────
 if(!restoreChat()){ initGuideTags(); }
+setTimeout(checkUnmatchedAlert, 5000);  // 5秒后检查是否有新未覆盖行业
 </script>
 </body>
 </html>
