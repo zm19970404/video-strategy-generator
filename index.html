@@ -58,10 +58,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .reset-btn{background:none;border:none;color:#555;font-size:11px;cursor:pointer;font-family:inherit}
 .reset-btn:hover{color:#888}
 
+.reset-btn:hover{color:#888}
+
+/* CDK门 */
+.cdk-overlay{position:fixed;inset:0;background:#0f0f0f;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}
+.cdk-overlay.hidden{display:none}
+.cdk-box{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center}
+.cdk-box .cdk-icon{font-size:48px;margin-bottom:12px}
+.cdk-box h2{font-size:18px;margin-bottom:6px;font-weight:700}
+.cdk-box .cdk-sub{font-size:12px;color:#666;margin-bottom:20px}
+.cdk-box input{width:100%;padding:14px 16px;background:#111122;border:1.5px solid #2a2a3e;border-radius:12px;color:#e8e8e8;font-size:18px;text-align:center;letter-spacing:2px;outline:none;font-family:monospace;text-transform:uppercase;transition:.2s}
+.cdk-box input:focus{border-color:#60a5fa}
+.cdk-box input::placeholder{color:#444;letter-spacing:0;font-family:inherit;font-size:14px}
+.cdk-box .cdk-btn{width:100%;padding:14px;margin-top:12px;background:linear-gradient(135deg,#60a5fa,#a78bfa);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
+.cdk-box .cdk-btn:disabled{opacity:.5;cursor:not-allowed}
+.cdk-box .cdk-msg{margin-top:12px;font-size:12px;display:none;line-height:1.6}
+.cdk-box .cdk-msg.show{display:block}
+.cdk-box .cdk-msg.error{color:#f87171}
+.cdk-box .cdk-msg.success{color:#34d399}
+
 @keyframes msgIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
+
+<!-- CDK 激活门 -->
+<div class="cdk-overlay" id="cdkOverlay">
+  <div class="cdk-box">
+    <div class="cdk-icon">🔑</div>
+    <h2>输入激活码</h2>
+    <div class="cdk-sub">购买课程后获取激活码</div>
+    <input type="text" id="cdkInput" placeholder="XXXX-XXXX-XXXX" maxlength="20"
+           onkeydown="if(event.key==='Enter')validateCDK()">
+    <button class="cdk-btn" id="cdkBtn" onclick="validateCDK()">激活使用</button>
+    <div class="cdk-msg" id="cdkMsg"></div>
+  </div>
+</div>
 
 <div class="header">
   <h1>📹 行业百问</h1>
@@ -90,6 +122,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <script>
+// ── CDK 验证 ──────────────────────────
+const CDK_API = '/api/validate-cdk';
+const CDK_STORAGE_KEY = 'vg_cdk_token';
+const CDK_INPUT_KEY = 'vg_cdk_input';
+
+// 页面加载时检查是否已激活
+(function checkAccess(){
+  const stored = localStorage.getItem(CDK_STORAGE_KEY);
+  const savedInput = localStorage.getItem(CDK_INPUT_KEY);
+  if(stored){ document.getElementById('cdkOverlay').classList.add('hidden'); }
+  if(savedInput){ document.getElementById('cdkInput').value = savedInput; }
+})();
+
+async function validateCDK(){
+  const input = document.getElementById('cdkInput').value.trim();
+  const btn = document.getElementById('cdkBtn');
+  const msg = document.getElementById('cdkMsg');
+
+  msg.className = 'cdk-msg'; msg.style.display = 'none';
+
+  if(!input){ showCDKMsg('请输入激活码','error'); return; }
+
+  btn.disabled = true; btn.textContent = '验证中...';
+
+  try {
+    const resp = await fetch(CDK_API, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ cdk: input })
+    });
+    const data = await resp.json();
+    if(data.success){
+      localStorage.setItem(CDK_STORAGE_KEY, data.token);
+      if(!localStorage.getItem(CDK_INPUT_KEY)) localStorage.setItem(CDK_INPUT_KEY, input);
+      showCDKMsg(data.hint||'激活成功','success');
+      setTimeout(()=>{ document.getElementById('cdkOverlay').classList.add('hidden'); }, 800);
+    } else {
+      let errMsg = data.hint || '激活码无效';
+      if(data.reason==='already_used') errMsg = '该激活码已在其他设备上使用';
+      if(data.reason==='invalid_cdk') errMsg = '激活码错误，请检查后重试';
+      showCDKMsg(errMsg, 'error');
+      btn.disabled = false; btn.textContent = '激活使用';
+    }
+  } catch(e){
+    // 网络错误或API挂了 → 降级放行 (不阻塞用户)
+    console.warn('CDK验证服务不可用,降级放行:', e.message);
+    localStorage.setItem(CDK_STORAGE_KEY, 'degraded_' + Date.now());
+    showCDKMsg('验证服务暂时不可用，已放行','success');
+    setTimeout(()=>{ document.getElementById('cdkOverlay').classList.add('hidden'); }, 800);
+  }
+}
+
+function showCDKMsg(text, type){
+  const msg = document.getElementById('cdkMsg');
+  msg.textContent = text;
+  msg.className = `cdk-msg show ${type}`;
+}
+
 // ── 上下文记忆 ──────────────────────
 let lastIndustry = '';  // 记住当前在聊什么行业
 let convTurn = 0;       // 对话轮次
