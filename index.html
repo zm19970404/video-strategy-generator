@@ -1016,6 +1016,16 @@ async function askLLM(userText, timeoutMs=25000){
 }
 
 
+function followupBtns(){
+  return `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
+}
+function finishSend(){
+  document.getElementById('btnSend').disabled = false;
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').focus();
+}
+
 async function send(){
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
@@ -1038,60 +1048,45 @@ async function send(){
 
   let botHtml = '';
 
-  setTimeout(async () => {
-    if(text === '@管理' || text === '@admin'){
-      showAdminPanel();
-    } else if(isChatter(text)){
-      botHtml = handleChatter(text);
-    } else if(convTurn === 0){
-      // 第一轮——行业匹配(本地毫秒级)
-      if(looksLikeNewIndustry(text)){
-        const match = matchIndustry(text);
-        lastIndustry = match.key; convTurn = 1;
-        if(!sessionId){ sessionId = 'sess_' + Date.now().toString(36); localStorage.setItem('vg_session_id', sessionId); }
-        // 如果本地DB没有这个行业 → 发服务器让LLM出第一轮答案
-        const isGeneric = match.answ.includes('你这个行业我没做深度拆解');
-        if(isGeneric){
-          const llmFirst = await askLLM(text);
-          if(llmFirst && llmFirst.length > 10){
-            botHtml = llmFirst.replace(/\n/g,'<br>') + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>\n<div style="margin-top:6px;font-size:10px;color:#555"><button class="followup-btn" onclick="sendFeedback('helpful')" style="font-size:10px">👍 有帮助</button> <button class="followup-btn" onclick="sendFeedback('not_helpful')" style="font-size:10px">👎 不准确</button></div>`;
-          } else {
-            botHtml = match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
-          }
-        } else {
-          botHtml = match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
-        }
-      } else {
-        botHtml = `你先告诉我你是做什么行业的，我才能帮你想怎么拍呀。<br><br>比如：<b>"我是做烧烤的"</b>、<b>"我开了一家火锅店"</b>、<b>"我做美甲的"</b>……<br><br>你直接说就行。`;
-      }
-    } else if(looksLikeNewIndustry(text)){
-      // 切换行业(本地毫秒级)
-      const match = matchIndustry(text);
-      lastIndustry = match.key; convTurn = 1;
-      botHtml = match.answ + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('我刚开的没经验怎么办')">刚开没经验</button><button class="followup-btn" onclick="quickFollow('不想露脸怎么办')">不想露脸</button><button class="followup-btn" onclick="quickFollow('发了没人看怎么办')">没人看</button><button class="followup-btn" onclick="quickFollow('怎么变现收钱')">怎么收钱</button></div>`;
-    } else {
-      // 追问 → 全部发给服务器(LLM智能回答)
-      const llmReply = await askLLM(text);
-      if(llmReply && llmReply.length > 10){
-        botHtml = llmReply.replace(/\n/g,'<br>') + `<div class="followup-hint"><button class="followup-btn" onclick="quickFollow('还能再详细一点吗')">再详细点</button><button class="followup-btn" onclick="quickFollow('有没有其他方法')">其他方法</button></div>\n<div style="margin-top:6px;font-size:10px;color:#555"><button class="followup-btn" onclick="sendFeedback('helpful')" style="font-size:10px">👍 有帮助</button> <button class="followup-btn" onclick="sendFeedback('not_helpful')" style="font-size:10px">👎 不准确</button></div>`;
-      } else {
-        botHtml = '我暂时回答不了这个问题，你换个方式问试试。或者告诉我更多你行业的具体情况，我帮你想。';
-      }
+  // 非LLM路径: 直接同步返回
+  if(text === '@管理' || text === '@admin'){
+    showAdminPanel(); typing.classList.remove('show'); return finishSend();
+  }
+  if(isChatter(text)){
+    botHtml = handleChatter(text);
+    typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
+  }
+  if(convTurn === 0){
+    if(!looksLikeNewIndustry(text)){
+      botHtml = '你先告诉我你是做什么行业的，我才能帮你想怎么拍呀。<br><br>比如：<b>"我是做烧烤的"</b>、<b>"我开了一家火锅店"</b>、<b>"我做美甲的"</b>……<br><br>你直接说就行。';
+      typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
     }
+    const match = matchIndustry(text);
+    lastIndustry = match.key; convTurn = 1;
+    if(!sessionId){ sessionId = 'sess_' + Date.now().toString(36); localStorage.setItem('vg_session_id', sessionId); }
+    if(match.answ && !match.answ.includes('你这个行业我没做深度拆解')){
+      botHtml = match.answ + followupBtns();
+      typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
+    }
+  } else if(looksLikeNewIndustry(text)){
+    const match = matchIndustry(text);
+    lastIndustry = match.key; convTurn = 1;
+    if(match.answ && !match.answ.includes('你这个行业我没做深度拆解')){
+      botHtml = match.answ + followupBtns();
+      typing.classList.remove('show'); addMsg('bot', botHtml); finishSend(); return;
+    }
+  }
 
-    typing.classList.remove('show');
-
-    // 记录机器人回复
-    chatHistory.push({role:'assistant', content:botHtml.replace(/<[^>]+>/g,'').slice(0,300)});
-    if(chatHistory.length > 30) chatHistory = chatHistory.slice(-30); // 只保留最近30条
-
-    addMsg('bot', botHtml);
-
-    document.getElementById('btnSend').disabled = false;
-    document.getElementById('chatInput').disabled = false;
-    document.getElementById('chatInput').value = '';
-    document.getElementById('chatInput').focus();
-  }, 500 + Math.random()*400);
+  // 本地搞不定→走LLM
+  const llmReply = await askLLM(text);
+  if(llmReply && llmReply.length > 10){
+    botHtml = llmReply.replace(/\n/g,'<br>') + followupBtns() + `<div style="margin-top:6px;font-size:10px;color:#555"><button class="followup-btn" onclick="sendFeedback('helpful')" style="font-size:10px">👍</button> <button class="followup-btn" onclick="sendFeedback('not_helpful')" style="font-size:10px">👎</button></div>`;
+  } else {
+    botHtml = '我暂时回答不了，你换个方式问试试。';
+  }
+  typing.classList.remove('show');
+  addMsg('bot', botHtml);
+  return finishSend();
 }
 
 async function resetChat(){
