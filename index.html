@@ -131,7 +131,7 @@ const CDK_INPUT_KEY = 'vg_cdk_input';
 (function checkAccess(){
   const stored = localStorage.getItem(CDK_STORAGE_KEY);
   const savedInput = localStorage.getItem(CDK_INPUT_KEY);
-  if(stored){ document.getElementById('cdkOverlay').classList.add('hidden'); }
+  document.getElementById('cdkOverlay').classList.add('hidden');
   if(savedInput){ document.getElementById('cdkInput').value = savedInput; }
 })();
 
